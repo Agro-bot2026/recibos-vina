@@ -53,5 +53,11 @@
             android:name=".ContratistaPanelActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- Política de privacidad -->
+        <activity
+            android:name=".PrivacyActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 </manifest>

@@ -40,7 +40,7 @@ public abstract class WebViewBase extends AppCompatActivity {
         else super.onBackPressed();
     }
 
-    /** Bridge común: volver e ir al inicio (lo usan todas las pantallas) */
+    /** Bridge común: volver, ir al inicio y abrir privacidad (lo usan todas) */
     protected class BridgeComun {
         @JavascriptInterface
         public void goBack() {
@@ -53,6 +53,11 @@ public abstract class WebViewBase extends AppCompatActivity {
             i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(i);
             finish();
+        }
+
+        @JavascriptInterface
+        public void openPrivacy() {
+            startActivity(new Intent(WebViewBase.this, PrivacyActivity.class));
         }
     }
 }

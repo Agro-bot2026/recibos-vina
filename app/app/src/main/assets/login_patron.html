@@ -60,7 +60,7 @@
         <div><label class="field-label" for="vinedo">Número de viñedo</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 20h18M5 20V9l7-4 7 4v11M8 20v-6h8v6M9 10h.01M12 10h.01M15 10h.01"/></svg><input id="vinedo" name="vinedo" type="text" autocomplete="off" placeholder="Ej: V-00123" required></div></div>
         <button class="submit" type="submit">Registrarme</button>
       </form>
-      <p class="help">¿Ya tenés una cuenta? <a href="#" id="help-link">Ingresar aquí</a></p>
+      <p class="help">¿Ya tenés una cuenta? <a href="#" id="help-link">Ingresar aquí</a> · <a href="#" id="privacy-link">Privacidad</a></p>
       <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Versión 1.0</span></footer>
     </section>
   </main>
@@ -71,6 +71,7 @@
     if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){shell.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;card.style.setProperty('--ry',(x*5)+'deg');card.style.setProperty('--rx',(y*-5)+'deg')});shell.addEventListener('pointerleave',()=>{card.style.setProperty('--ry','0deg');card.style.setProperty('--rx','0deg')})}
     document.getElementById('login-form').addEventListener('submit',e=>{e.preventDefault();const nombre=document.getElementById('nombre').value.trim();const vinedo=document.getElementById('vinedo').value.trim();if(!nombre||!vinedo){notify('Completá tu nombre y número de viñedo');return;}notify('Creando tu cuenta de patrón…');const ok=AndroidBridge.registrarPatron(nombre,vinedo);if(!ok)notify('Error al registrar. Verificá los datos.');});
     document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();notify('Redirigiendo al acceso de patrones…')});
+    document.getElementById('privacy-link').addEventListener('click',e=>{e.preventDefault();AndroidBridge.openPrivacy()});
   </script>
 </body>
 </html>

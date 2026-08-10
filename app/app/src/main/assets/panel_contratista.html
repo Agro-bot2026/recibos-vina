@@ -61,7 +61,7 @@
       </div>
       <div class="separator">Tus recibos</div>
       <div class="list" id="listaRecibos"></div>
-      <p class="help">¿Necesitás ayuda? <a href="#" id="help-link">Ver centro de ayuda</a></p>
+      <p class="help">¿Necesitás ayuda? <a href="#" id="help-link">Ver centro de ayuda</a> · <a href="#" id="privacy-link">Privacidad</a></p>
       <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Versión 1.0</span></footer>
     </section>
   </main>
@@ -106,6 +106,7 @@
       else { notify('Abriendo tus recibos…'); cargarRecibos(); }
     }));
     document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();notify('El centro de ayuda estará disponible próximamente')});
+    document.getElementById('privacy-link').addEventListener('click',e=>{e.preventDefault();AndroidBridge.openPrivacy()});
   </script>
 </body>
 </html>
