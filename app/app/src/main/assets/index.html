@@ -288,7 +288,7 @@
         if (window.AndroidBridge) {
           if (control.dataset.role === 'patron') window.AndroidBridge.openPatron();
           else if (control.dataset.role === 'contratista') window.AndroidBridge.openContratista();
-          else notify('Preparando acceso biométrico...');
+          else window.AndroidBridge.biometricAuth();
         } else {
           const messages = { patron: 'Acceso para patrones seleccionado', contratista: 'Acceso para contratistas seleccionado', biometrico: 'Preparando acceso biométrico' };
           notify(messages[control.dataset.role]);

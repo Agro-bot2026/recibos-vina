@@ -1,11 +1,13 @@
 package com.recibosvina.app;
 
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -36,6 +38,13 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl("file:///android_asset/index.html");
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 📢 Anuncio de apertura (App Open) al volver a la app
+        AdHelper.showAppOpen(this);
+    }
+
     private class Bridge {
         /** Devuelve el modelo del dispositivo (ej: "TCL 20 SE") */
         @JavascriptInterface
@@ -54,6 +63,21 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void openContratista() {
             startActivity(new android.content.Intent(MainActivity.this, ContratistaLoginActivity.class));
+        }
+
+        /** 👆 Huella dactilar: entra directo con el CUIL guardado */
+        @JavascriptInterface
+        public void biometricAuth() {
+            runOnUiThread(() -> BiometricHelper.autenticar(MainActivity.this, () -> {
+                SharedPreferences prefs = getSharedPreferences("recibos", MODE_PRIVATE);
+                String cuil = prefs.getString("cuil", "");
+                if (cuil.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "Primero entrá una vez con CUIL y nombre", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                Toast.makeText(MainActivity.this, "✅ Huella OK! Entrando...", Toast.LENGTH_SHORT).show();
+                startActivity(new android.content.Intent(MainActivity.this, ContratistaPanelActivity.class));
+            }));
         }
     }
 

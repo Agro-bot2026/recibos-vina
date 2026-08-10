@@ -49,42 +49,53 @@ public class ContratistaPanelActivity extends AppCompatActivity {
 
         // Ver recibos
         btnVerRecibos.setOnClickListener(v -> {
-            new Thread(() -> {
-                try {
-                    URL url = new URL(MainActivity.API_URL + "/api/contratista/recibos?cuil=" + java.net.URLEncoder.encode(cuil, "UTF-8") + "&nombre=" + java.net.URLEncoder.encode(nombre, "UTF-8"));
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
-                    int code = conn.getResponseCode();
-                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
-
-                    runOnUiThread(() -> {
-                        if (!resp.optBoolean("ok")) {
-                            Toast.makeText(this, "❌ " + resp.optString("error"), Toast.LENGTH_LONG).show();
-                            return;
-                        }
-                        StringBuilder txt = new StringBuilder("📄 MIS RECIBOS:\n\n");
-                        JSONArray arr = resp.optJSONArray("recibos");
-                        if (arr != null && arr.length() > 0) {
-                            for (int i = 0; i < arr.length(); i++) {
-                                JSONObject r = arr.optJSONObject(i);
-                                String estado = r.optInt("firmado") == 1 ? "✅ Firmado" : "⏳ Sin firmar";
-                                txt.append("• ").append(r.optString("periodo")).append(" — ").append(estado).append("\n");
-                            }
-                        } else {
-                            txt.append("No tenés recibos todavía.");
-                        }
-                        tvRecibos.setText(txt.toString());
-                    });
-                } catch (Exception e) {
-                    runOnUiThread(() -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
-                }
-            }).start();
+            // 📢 Anuncio recompensado cada 3 veces (el usuario "paga" con un anuncio)
+            int veces = getSharedPreferences("recibos", MODE_PRIVATE).getInt("veces_vistas", 0) + 1;
+            getSharedPreferences("recibos", MODE_PRIVATE).edit().putInt("veces_vistas", veces).apply();
+            if (veces % 3 == 0) {
+                AdHelper.showRewarded(this, () -> cargarRecibos(tvRecibos));
+            } else {
+                cargarRecibos(tvRecibos);
+            }
         });
+    }
+
+    private void cargarRecibos(TextView tvRecibos) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(MainActivity.API_URL + "/api/contratista/recibos?cuil=" + java.net.URLEncoder.encode(cuil, "UTF-8") + "&nombre=" + java.net.URLEncoder.encode(nombre, "UTF-8"));
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                int code = conn.getResponseCode();
+                InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
+                StringBuilder sb = new StringBuilder();
+                int c;
+                while ((c = is.read()) != -1) sb.append((char) c);
+                JSONObject resp = new JSONObject(sb.toString());
+                conn.disconnect();
+
+                runOnUiThread(() -> {
+                    if (!resp.optBoolean("ok")) {
+                        Toast.makeText(this, "❌ " + resp.optString("error"), Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    StringBuilder txt = new StringBuilder("📄 MIS RECIBOS:\n\n");
+                    JSONArray arr = resp.optJSONArray("recibos");
+                    if (arr != null && arr.length() > 0) {
+                        for (int i = 0; i < arr.length(); i++) {
+                            JSONObject r = arr.optJSONObject(i);
+                            String estado = r.optInt("firmado") == 1 ? "✅ Firmado" : "⏳ Sin firmar";
+                            txt.append("• ").append(r.optString("periodo")).append(" — ").append(estado).append("\n");
+                        }
+                    } else {
+                        txt.append("No tenés recibos todavía.");
+                    }
+                    tvRecibos.setText(txt.toString());
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
+        }).start();
     }
 
     @Override

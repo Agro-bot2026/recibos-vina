@@ -26,14 +26,21 @@ public class AdHelper {
     private static final String TAG = "AdHelper";
     public static final String AD_UNIT_INTERSTITIAL = "ca-app-pub-4478373683231277/6804747303";
     public static final String AD_UNIT_REWARDED = "ca-app-pub-4478373683231277/5777892085";
+    public static final String AD_UNIT_APP_OPEN = "ca-app-pub-4478373683231277/2405769075";
 
     private static InterstitialAd interstitial;
     private static RewardedAd rewardedAd;
+    private static com.google.android.gms.ads.appopen.AppOpenAd appOpenAd;
+    private static long appOpenLoadTime = 0;
 
     public static void init(Context context) {
         MobileAds.initialize(context, initStatus -> Log.d(TAG, "AdMob inicializado"));
         // Cargar interstitial de entrada
         loadInterstitial(context);
+        // Cargar app open
+        loadAppOpen(context);
+        // Cargar recompensado
+        loadRewarded(context);
     }
 
     /** Carga un anuncio interstitial para tenerlo listo */
@@ -85,6 +92,26 @@ public class AdHelper {
         }
     }
 
+    /** Muestra el anuncio recompensado (si está cargado) */
+    public static void showRewarded(Activity activity, Runnable onReward) {
+        if (rewardedAd != null) {
+            final RewardedAd ad = rewardedAd;
+            rewardedAd = null;
+            ad.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    loadRewarded(activity);
+                }
+            });
+            ad.show(activity, rewardItem -> {
+                // usuario vio el anuncio → dar la recompensa
+                if (onReward != null) onReward.run();
+            });
+        } else {
+            if (onReward != null) onReward.run();
+        }
+    }
+
     /** Carga el anuncio recompensado */
     public static void loadRewarded(Context context) {
         RewardedAd.load(context, AD_UNIT_REWARDED, new AdRequest.Builder().build(),
@@ -101,5 +128,44 @@ public class AdHelper {
                         Log.d(TAG, "Recompensado falló: " + error.getMessage());
                     }
                 });
+    }
+
+    /** Carga el anuncio de apertura de app (App Open) */
+    public static void loadAppOpen(Context context) {
+        com.google.android.gms.ads.appopen.AppOpenAd.load(context, AD_UNIT_APP_OPEN, new AdRequest.Builder().build(),
+                com.google.android.gms.ads.AdRequest.APP_OPEN_AD_ORIENTATION_PORTRAIT,
+                new com.google.android.gms.ads.appopen.AppOpenAd.AppOpenAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(com.google.android.gms.ads.appopen.AppOpenAd ad) {
+                        appOpenAd = ad;
+                        appOpenLoadTime = System.currentTimeMillis();
+                        Log.d(TAG, "App Open cargado");
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(LoadAdError error) {
+                        appOpenAd = null;
+                        Log.d(TAG, "App Open falló: " + error.getMessage());
+                    }
+                });
+    }
+
+    /** Muestra el App Open (si está cargado y es reciente, <4h) */
+    public static void showAppOpen(Activity activity) {
+        long now = System.currentTimeMillis();
+        if (appOpenAd == null || now - appOpenLoadTime > 4 * 60 * 60 * 1000) {
+            // no hay anuncio o está viejo — recargar para la próxima
+            loadAppOpen(activity);
+            return;
+        }
+        final com.google.android.gms.ads.appopen.AppOpenAd ad = appOpenAd;
+        appOpenAd = null; // se consume
+        ad.setFullScreenContentCallback(new FullScreenContentCallback() {
+            @Override
+            public void onAdDismissedFullScreenContent() {
+                loadAppOpen(activity); // recargar para la próxima apertura
+            }
+        });
+        ad.show(activity);
     }
 }
