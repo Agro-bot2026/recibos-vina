@@ -133,7 +133,6 @@ public class AdHelper {
     /** Carga el anuncio de apertura de app (App Open) */
     public static void loadAppOpen(Context context) {
         com.google.android.gms.ads.appopen.AppOpenAd.load(context, AD_UNIT_APP_OPEN, new AdRequest.Builder().build(),
-                com.google.android.gms.ads.AdRequest.APP_OPEN_AD_ORIENTATION_PORTRAIT,
                 new com.google.android.gms.ads.appopen.AppOpenAd.AppOpenAdLoadCallback() {
                     @Override
                     public void onAdLoaded(com.google.android.gms.ads.appopen.AppOpenAd ad) {
