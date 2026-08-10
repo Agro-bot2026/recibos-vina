@@ -141,7 +141,7 @@ app.get('/api/contratista/recibos', (req, res) => {
     if (!cuil || !nombre) return res.status(400).json({ ok: false, error: 'Faltan cuil y nombre' });
     db.get('SELECT id, nombre, patron_id, firma_activa FROM contratistas WHERE cuil=?', [cuil], (e, c) => {
         if (!c) return res.status(404).json({ ok: false, error: 'No estás registrado. Pedile a tu patrón que te registre.' });
-        if (c.nombre.trim().toLowerCase() !== nombre.trim().toLowerCase()) {
+        if (!nombresCoinciden(c.nombre, nombre)) {
             return res.status(403).json({ ok: false, error: 'El nombre no coincide con el CUIL. Verificá.' });
         }
         db.all('SELECT id, periodo, firmado, firma_fecha, created_at FROM recibos WHERE contratista_id=? ORDER BY created_at DESC', [c.id], (e2, recibos) => {
@@ -149,6 +149,19 @@ app.get('/api/contratista/recibos', (req, res) => {
         });
     });
 });
+
+// Normaliza un nombre: minúsculas, sin tildes, sin símbolos, palabras ordenadas
+function normalizarNombre(n) {
+    return (n || '')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // quitar tildes
+        .replace(/[^a-z0-9\s]/g, ' ')                       // solo letras/números
+        .split(/\s+/).filter(Boolean).sort().join(' ');     // ordenar palabras
+}
+
+function nombresCoinciden(registrado, ingresado) {
+    return normalizarNombre(registrado) === normalizarNombre(ingresado);
+}
 
 // ─── Contratista: subir su firma (foto del papel) ───
 app.post('/api/contratista/firma', (req, res) => {

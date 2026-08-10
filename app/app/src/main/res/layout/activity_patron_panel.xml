@@ -20,6 +20,7 @@
             android:layout_marginTop="10dp" />
 
         <EditText
+        android:textColor="#111111"
             android:id="@+id/etCuilContratista"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -29,6 +30,7 @@
             android:padding="12dp" />
 
         <EditText
+        android:textColor="#111111"
             android:id="@+id/etNombreContratistaNuevo"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -63,6 +65,7 @@
             android:layout_marginTop="16dp" />
 
         <EditText
+        android:textColor="#111111"
             android:id="@+id/etPeriodo"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -72,6 +75,7 @@
             android:padding="12dp" />
 
         <EditText
+        android:textColor="#111111"
             android:id="@+id/etConcepto"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -81,6 +85,7 @@
             android:padding="12dp" />
 
         <EditText
+        android:textColor="#111111"
             android:id="@+id/etRemunerativo"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -91,6 +96,7 @@
             android:inputType="numberDecimal" />
 
         <EditText
+        android:textColor="#111111"
             android:id="@+id/etNoRemunerativo"
             android:layout_width="match_parent"
             android:layout_height="50dp"

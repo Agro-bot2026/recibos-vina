@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.RecibosVina" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Forzamos tema claro: el texto siempre oscuro sobre fondos claros -->
+    <style name="Theme.RecibosVina" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/azul_vina</item>
         <item name="colorPrimaryVariant">@color/azul_vina_oscuro</item>
         <item name="colorOnPrimary">@color/blanco</item>

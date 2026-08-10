@@ -24,6 +24,7 @@
         android:textColor="#666" />
 
     <EditText
+        android:textColor="#111111"
         android:id="@+id/etCuil"
         android:layout_width="match_parent"
         android:layout_height="52dp"
@@ -34,6 +35,7 @@
         android:inputType="text" />
 
     <EditText
+        android:textColor="#111111"
         android:id="@+id/etNombreContratista"
         android:layout_width="match_parent"
         android:layout_height="52dp"
