@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fondo">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📋 Registrar Contratista"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/azul_vina"
+            android:layout_marginTop="10dp" />
+
+        <EditText
+            android:id="@+id/etCuilContratista"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="10dp"
+            android:hint="CUIL del contratista (20-XXXXXXXX-X)"
+            android:background="@drawable/bg_input"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etNombreContratistaNuevo"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:hint="Nombre y apellido"
+            android:background="@drawable/bg_input"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnRegistrarContratista"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="10dp"
+            android:text="REGISTRAR CONTRATISTA"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/azul_vina" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"
+            android:layout_marginTop="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📄 Generar Recibo"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/azul_vina"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/etPeriodo"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="10dp"
+            android:hint="Período (ej: ENERO 2026)"
+            android:background="@drawable/bg_input"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etConcepto"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:hint="Concepto (ej: 100 HAS EN PRODUCCIÓN)"
+            android:background="@drawable/bg_input"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etRemunerativo"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:hint="Remunerativo (ej: 68280.95)"
+            android:background="@drawable/bg_input"
+            android:padding="12dp"
+            android:inputType="numberDecimal" />
+
+        <EditText
+            android:id="@+id/etNoRemunerativo"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:hint="No remunerativo (opcional)"
+            android:background="@drawable/bg_input"
+            android:padding="12dp"
+            android:inputType="numberDecimal" />
+
+        <Button
+            android:id="@+id/btnGenerarRecibo"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="10dp"
+            android:text="GENERAR RECIBO"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/verde_ok" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="💡 El recibo se genera en formato nuevo (Decreto 407/2026) y el contratista lo firma desde su teléfono."
+            android:textSize="12sp"
+            android:textColor="#666" />
+
+    </LinearLayout>
+</ScrollView>

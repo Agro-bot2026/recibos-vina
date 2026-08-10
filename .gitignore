@@ -1,0 +1,13 @@
+# Build
+app/build/
+app/app/build/
+*.apk
+*.keystore
+*.jks
+
+# Node
+node_modules/
+
+# Datos
+/opt/
+*.db

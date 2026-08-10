@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="azul_vina">#1a4d8f</color>
+    <color name="azul_vina_oscuro">#12355f</color>
+    <color name="blanco">#FFFFFF</color>
+    <color name="fondo">#F5F5F5</color>
+    <color name="verde_ok">#2e7d32</color>
+</resources>
