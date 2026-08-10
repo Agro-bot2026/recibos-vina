@@ -3,68 +3,109 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#07111f">
-  <title>ViñaRecibos · Panel contratista</title>
+  <meta name="theme-color" content="#06101d">
+  <title>ViñaRecibos · Firma y recibos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <style>
+    :root { --bg:#06101d; --panel:rgba(13,27,47,.78); --line:rgba(170,209,255,.15); --text:#f4f8ff; --muted:#91a6bf; --blue:#5ba9ff; --blue-deep:#286dff; --mint:#5de1b2; --violet:#9c7bff; }
+    * { box-sizing:border-box; }
+    html,body { min-height:100%; }
+    body { min-height:100vh; margin:0; display:grid; place-items:center; padding:22px 18px; overflow:hidden; color:var(--text); font-family:'DM Sans',sans-serif; background:radial-gradient(circle at 14% 12%,rgba(40,109,255,.25),transparent 28rem),radial-gradient(circle at 90% 86%,rgba(93,225,178,.13),transparent 26rem),linear-gradient(145deg,#08182b 0%,var(--bg) 54%,#081321 100%); }
+    body::before { content:''; position:fixed; inset:0; pointer-events:none; opacity:.3; background-image:linear-gradient(rgba(133,175,221,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(133,175,221,.055) 1px,transparent 1px); background-size:42px 42px; mask-image:linear-gradient(to bottom,#000,transparent 78%); animation:gridDrift 18s linear infinite; }
+    body::after { content:''; position:fixed; inset:-100% 0; pointer-events:none; z-index:5; opacity:.07; background:repeating-linear-gradient(0deg,transparent 0 4px,rgba(143,203,255,.22) 5px,transparent 6px); animation:scanline 12s linear infinite; }
+    @keyframes gridDrift { to { background-position:42px 42px; } } @keyframes scanline { to { transform:translateY(100%); } } @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes glow { 50%{box-shadow:0 0 20px rgba(91,169,255,.35)} } @keyframes shimmer { to { transform:translateX(170%) skewX(-20deg); } } @keyframes borderFlow { to { background-position:200% center; } }
+    .shell { width:min(100%,470px); position:relative; isolation:isolate; perspective:1200px; }
+    .shell::before { content:''; position:absolute; z-index:-1; inset:12% -12% -12%; border-radius:50%; background:rgba(40,109,255,.15); filter:blur(64px); }
+    .card { position:relative; overflow:hidden; padding:29px 30px 25px; border:1px solid var(--line); border-radius:30px; background:linear-gradient(145deg,rgba(19,39,66,.84),rgba(7,19,34,.9)); box-shadow:0 28px 80px rgba(0,0,0,.44),inset 0 1px rgba(255,255,255,.08); backdrop-filter:blur(24px); transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition:transform .18s ease-out; }
+    .card::before { content:''; position:absolute; width:190px; height:190px; top:-120px; right:-80px; border-radius:50%; background:radial-gradient(circle,rgba(91,169,255,.25),transparent 68%); filter:blur(7px); animation:float 7s ease-in-out infinite; }
+    .card::after { content:''; position:absolute; top:0; left:12%; right:12%; height:1px; background:linear-gradient(90deg,transparent,var(--blue),var(--mint),var(--violet),transparent); background-size:200% auto; animation:borderFlow 5s linear infinite; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:27px; }
+    .eyebrow { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+    .status { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid rgba(93,225,178,.2); border-radius:999px; color:#a7f5d5; background:rgba(93,225,178,.08); font-size:11px; font-weight:600; }
+    .status::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 12px var(--mint); animation:glow 2s ease-in-out infinite; }
+    .brand { text-align:center; }
+    .brand-mark { width:76px; height:76px; display:grid; place-items:center; margin:0 auto 17px; border:1px solid rgba(152,203,255,.35); border-radius:23px; background:linear-gradient(145deg,rgba(72,145,255,.32),rgba(112,65,219,.28)); box-shadow:0 18px 40px rgba(40,109,255,.24),inset 0 1px rgba(255,255,255,.22); animation:float 5s ease-in-out infinite; }
+    .brand-mark svg { width:44px; filter:drop-shadow(0 4px 10px rgba(91,169,255,.35)); }
+    h1 { margin:0; font-family:'Space Grotesk',sans-serif; font-size:clamp(28px,8vw,37px); letter-spacing:-.045em; line-height:1.05; } h1 span { color:var(--blue); }
+    .subtitle { max-width:350px; margin:12px auto 27px; color:var(--muted); font-size:14px; line-height:1.55; }
+    .actions { display:grid; gap:13px; } .action { position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; width:100%; min-height:72px; padding:14px 18px; border:1px solid transparent; border-radius:17px; color:white; font:inherit; text-align:left; cursor:pointer; transition:transform .2s,filter .2s,box-shadow .2s; } .action:hover { transform:translateY(-3px); filter:brightness(1.09); } .action::after { content:''; position:absolute; inset:0 auto 0 -75%; width:42%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent); transform:skewX(-20deg); } .action:hover::after { animation:shimmer .8s ease forwards; } .action-upload { background:linear-gradient(105deg,#168d77,#126553); box-shadow:0 14px 30px rgba(22,141,119,.22); } .action-receipts { background:linear-gradient(105deg,#347cff,#2756d7); box-shadow:0 14px 30px rgba(40,109,255,.28); } .action-icon { width:40px; height:40px; flex:0 0 40px; display:grid; place-items:center; border-radius:13px; background:rgba(255,255,255,.14); } .action-icon svg { width:22px; height:22px; } .action-copy { flex:1; } .action-label { display:block; font-size:15px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; } .action-hint { display:block; margin-top:3px; color:rgba(255,255,255,.72); font-size:11px; } .action-arrow { width:18px; opacity:.75; } .separator { display:flex; align-items:center; gap:12px; margin:21px 0 4px; color:#71869f; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; } .separator::before,.separator::after { content:''; height:1px; flex:1; background:var(--line); }
+    .list { display:grid; gap:10px; margin-top:12px; max-height:260px; overflow-y:auto; }
+    .recibo { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 15px; border:1px solid var(--line); border-radius:15px; background:rgba(255,255,255,.045); font-size:13px; }
+    .recibo .periodo { font-weight:700; }
+    .badge { padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+    .badge-ok { color:#a7f5d5; background:rgba(93,225,178,.14); border:1px solid rgba(93,225,178,.25); }
+    .badge-wait { color:#ffd9a0; background:rgba(255,178,92,.12); border:1px solid rgba(255,178,92,.25); }
+    .firmar-btn { margin-left:8px; padding:6px 12px; border:0; border-radius:10px; color:#fff; background:linear-gradient(105deg,#168d77,#126553); font:inherit; font-size:11px; font-weight:700; cursor:pointer; }
+    .empty { padding:20px; color:var(--muted); text-align:center; font-size:13px; border:1px dashed var(--line); border-radius:15px; }
+    .help { margin:17px 0 0; color:#758aa2; text-align:center; font-size:12px; } .help a { color:#9bc8ff; text-decoration:none; }
+    .footer { display:flex; justify-content:center; gap:9px; margin-top:21px; color:#71869f; font-size:11px; } .footer .dot { color:var(--blue); }
+    .toast { position:fixed; left:50%; bottom:22px; z-index:10; padding:12px 17px; border:1px solid rgba(91,169,255,.3); border-radius:12px; color:var(--text); background:#10243b; box-shadow:0 20px 50px rgba(0,0,0,.4); font-size:13px; transform:translate(-50%,140%); transition:transform .3s; } .toast.show { transform:translate(-50%,0); }
+    @media(max-width:420px){ .card{padding:24px 19px 21px;border-radius:25px}.topbar{margin-bottom:23px}.status{padding:6px 8px;font-size:10px} }
+    @media(prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;transform:none!important} }
+  </style>
 </head>
 <body>
   <main class="shell">
-    <section class="card">
-      <div class="topbar">
-        <div class="eyebrow"><span>VR</span> <span id="nombreLabel">Contratista</span></div>
-        <button class="back-btn" onclick="AndroidBridge.goHome()">← Inicio</button>
-      </div>
-
+    <section class="card" aria-labelledby="page-title">
+      <div class="topbar"><div class="eyebrow">VR · Área contratista</div><div class="status">Sesión protegida</div></div>
       <header class="brand">
-        <h1>Mis <span>Recibos</span></h1>
-        <p class="subtitle" id="subtitulo">Tu firma: subila una vez y firmá con tu firma real</p>
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M34 20C38 11 47 8 54 10C53 19 47 26 37 27" fill="#5DE1B2"/><path d="M33 25C27 16 19 14 11 17C13 27 21 32 31 31" fill="#9C7BFF"/><circle cx="22" cy="40" r="8" fill="#8CC7FF"/><circle cx="33" cy="40" r="8" fill="#6BABFF"/><circle cx="28" cy="49" r="8" fill="#5B91FF"/><circle cx="40" cy="49" r="8" fill="#4779E8"/><path d="M29 29C30 24 33 20 38 16" stroke="#F4F8FF" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+        <h1 id="page-title">Tu <span>firma</span></h1>
+        <p class="subtitle">Gestioná tu firma digital y consultá tus recibos de sueldo desde un solo lugar.</p>
       </header>
-
-      <div class="actions">
-        <button class="btn btn-secondary" onclick="subirFirma()">📸 SUBIR MI FIRMA</button>
-        <button class="btn btn-primary" onclick="verRecibos()">📄 VER MIS RECIBOS</button>
+      <div class="actions" aria-label="Acciones del contratista">
+        <button class="action action-upload" type="button" data-action="firma"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17.5 16.5 5a2.1 2.1 0 0 1 3 3L7 20.5 3 21l1-3.5Z"/><path d="m14 7 3 3M5 17l3 3"/></svg></span><span class="action-copy"><span class="action-label">Subir mi firma</span><span class="action-hint">Cargá una foto de tu firma manuscrita</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="action action-receipts" type="button" data-action="recibos"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg></span><span class="action-copy"><span class="action-label">Ver mis recibos</span><span class="action-hint">Consultá, firmá y descargá tus comprobantes</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
       </div>
-
-      <div class="divider">Recibos</div>
+      <div class="separator">Tus recibos</div>
       <div class="list" id="listaRecibos"></div>
-
-      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Mendoza, Argentina</span></footer>
+      <p class="help">¿Necesitás ayuda? <a href="#" id="help-link">Ver centro de ayuda</a></p>
+      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Versión 1.0</span></footer>
     </section>
   </main>
   <div class="toast" role="status" aria-live="polite"></div>
-
   <script>
-    // Mostrar el nombre del contratista
-    if (window.AndroidBridge && AndroidBridge.getNombreContratista) {
-      document.getElementById('nombreLabel').textContent = AndroidBridge.getNombreContratista();
-    }
-    const toast = document.querySelector('.toast');
-    let timer;
-    function notify(m) { toast.textContent = m; toast.classList.add('show'); clearTimeout(timer); timer = setTimeout(() => toast.classList.remove('show'), 3000); }
+    const card=document.querySelector('.card'),shell=document.querySelector('.shell'),toast=document.querySelector('.toast'); let timer;
+    function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2800)}
+    if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){shell.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;card.style.setProperty('--ry',(x*5)+'deg');card.style.setProperty('--rx',(y*-5)+'deg')});shell.addEventListener('pointerleave',()=>{card.style.setProperty('--ry','0deg');card.style.setProperty('--rx','0deg')})}
 
-    function subirFirma() { AndroidBridge.subirFirma(); }
-    function verRecibos() {
-      const recibos = AndroidBridge.verRecibos();
-      if (!recibos) { notify('No tenés recibos todavía'); return; }
+    function renderRecibos(recibos) {
       const lista = document.getElementById('listaRecibos');
+      if (!recibos || recibos.length === 0) {
+        lista.innerHTML = '<div class="empty">No tenés recibos todavía</div>';
+        return;
+      }
       lista.innerHTML = '';
       recibos.forEach(r => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
+        const div = document.createElement('div');
+        div.className = 'recibo';
         const badge = r.firmado === 1
           ? '<span class="badge badge-ok">✅ Firmado</span>'
           : '<span class="badge badge-wait">⏳ Sin firmar</span>';
-        item.innerHTML = '<span class="periodo">' + r.periodo + '</span>' + badge;
-        if (r.firmado === 0) {
-          item.style.cursor = 'pointer';
-          item.onclick = () => { AndroidBridge.firmarRecibo(r.id); };
-        }
-        lista.appendChild(item);
+        const boton = r.firmado === 1 ? '' : '<button class="firmar-btn" onclick="firmar(' + r.id + ')">✍️ Firmar</button>';
+        div.innerHTML = '<span class="periodo">' + r.periodo + '</span>' + badge + boton;
+        lista.appendChild(div);
       });
     }
+
+    function firmar(id) {
+      const ok = AndroidBridge.firmarRecibo(id);
+      if (ok) { notify('✅ Recibo firmado!'); cargarRecibos(); }
+      else notify('❌ No se pudo firmar. ¿Subiste tu firma primero?');
+    }
+
+    function cargarRecibos() {
+      const recibos = AndroidBridge.verRecibos();
+      renderRecibos(recibos);
+    }
+
+    document.querySelectorAll('[data-action]').forEach(button=>button.addEventListener('click',()=>{
+      if(button.dataset.action==='firma'){ notify('Preparando la carga de tu firma…'); AndroidBridge.subirFirma(); }
+      else { notify('Abriendo tus recibos…'); cargarRecibos(); }
+    }));
+    document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();notify('El centro de ayuda estará disponible próximamente')});
   </script>
 </body>
 </html>
