@@ -33,6 +33,6 @@ android {
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
-    // WebView para mostrar el recibo PDF
-    // (sin AdMob por ahora — se agrega cuando el usuario cree la cuenta)
+    // AdMob (anuncios)
+    implementation 'com.google.android.gms:play-services-ads:23.2.0'
 }

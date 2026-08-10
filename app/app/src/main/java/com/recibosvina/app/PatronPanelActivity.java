@@ -122,7 +122,9 @@ public class PatronPanelActivity extends AppCompatActivity {
                     conn.disconnect();
                     runOnUiThread(() -> {
                         if (resp.optBoolean("ok")) {
-                            Toast.makeText(this, "✅ Recibo generado! Se lo avisamos al contratista", Toast.LENGTH_LONG).show();
+                            // 📢 Anuncio al generar el recibo
+                            AdHelper.showInterstitial(PatronPanelActivity.this, () ->
+                                    Toast.makeText(PatronPanelActivity.this, "✅ Recibo generado! Se lo avisamos al contratista", Toast.LENGTH_LONG).show());
                             etPeriodo.setText(""); etRemunerativo.setText("");
                         } else {
                             Toast.makeText(this, "❌ " + resp.optString("error"), Toast.LENGTH_LONG).show();

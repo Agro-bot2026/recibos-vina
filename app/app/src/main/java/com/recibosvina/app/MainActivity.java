@@ -21,6 +21,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Inicializar AdMob y precargar anuncios
+        AdHelper.init(this);
+
         Button btnPatron = findViewById(R.id.btnPatron);
         Button btnContratista = findViewById(R.id.btnContratista);
 

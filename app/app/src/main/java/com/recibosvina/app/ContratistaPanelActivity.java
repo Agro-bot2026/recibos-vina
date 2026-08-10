@@ -128,7 +128,9 @@ public class ContratistaPanelActivity extends AppCompatActivity {
                 conn.disconnect();
                 runOnUiThread(() -> {
                     if (resp.optBoolean("ok")) {
-                        Toast.makeText(this, "✅ Firma guardada! Ya podés firmar tus recibos", Toast.LENGTH_LONG).show();
+                        // 📢 Anuncio al guardar la firma
+                        AdHelper.showInterstitial(ContratistaPanelActivity.this, () ->
+                                Toast.makeText(ContratistaPanelActivity.this, "✅ Firma guardada! Ya podés firmar tus recibos", Toast.LENGTH_LONG).show());
                     } else {
                         Toast.makeText(this, "❌ " + resp.optString("error"), Toast.LENGTH_LONG).show();
                     }
