@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07111f">
+  <title>ViñaRecibos · Panel contratista</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="card">
+      <div class="topbar">
+        <div class="eyebrow"><span>VR</span> <span id="nombreLabel">Contratista</span></div>
+        <button class="back-btn" onclick="AndroidBridge.goHome()">← Inicio</button>
+      </div>
+
+      <header class="brand">
+        <h1>Mis <span>Recibos</span></h1>
+        <p class="subtitle" id="subtitulo">Tu firma: subila una vez y firmá con tu firma real</p>
+      </header>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="subirFirma()">📸 SUBIR MI FIRMA</button>
+        <button class="btn btn-primary" onclick="verRecibos()">📄 VER MIS RECIBOS</button>
+      </div>
+
+      <div class="divider">Recibos</div>
+      <div class="list" id="listaRecibos"></div>
+
+      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Mendoza, Argentina</span></footer>
+    </section>
+  </main>
+  <div class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // Mostrar el nombre del contratista
+    if (window.AndroidBridge && AndroidBridge.getNombreContratista) {
+      document.getElementById('nombreLabel').textContent = AndroidBridge.getNombreContratista();
+    }
+    const toast = document.querySelector('.toast');
+    let timer;
+    function notify(m) { toast.textContent = m; toast.classList.add('show'); clearTimeout(timer); timer = setTimeout(() => toast.classList.remove('show'), 3000); }
+
+    function subirFirma() { AndroidBridge.subirFirma(); }
+    function verRecibos() {
+      const recibos = AndroidBridge.verRecibos();
+      if (!recibos) { notify('No tenés recibos todavía'); return; }
+      const lista = document.getElementById('listaRecibos');
+      lista.innerHTML = '';
+      recibos.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        const badge = r.firmado === 1
+          ? '<span class="badge badge-ok">✅ Firmado</span>'
+          : '<span class="badge badge-wait">⏳ Sin firmar</span>';
+        item.innerHTML = '<span class="periodo">' + r.periodo + '</span>' + badge;
+        if (r.firmado === 0) {
+          item.style.cursor = 'pointer';
+          item.onclick = () => { AndroidBridge.firmarRecibo(r.id); };
+        }
+        lista.appendChild(item);
+      });
+    }
+  </script>
+</body>
+</html>

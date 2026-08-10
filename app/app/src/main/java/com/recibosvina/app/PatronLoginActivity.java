@@ -1,11 +1,8 @@
 package com.recibosvina.app;
 
-import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
+import android.content.Intent;
+import android.webkit.JavascriptInterface;
 import android.widget.Toast;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONObject;
 
@@ -15,33 +12,27 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 🦇 Login/Registro del PATRÓN
- * Se registra con nombre + número de viñedo (la clave del contrato)
+ * 🦇 Registro del PATRÓN (WebView premium)
  */
-public class PatronLoginActivity extends AppCompatActivity {
+public class PatronLoginActivity extends WebViewBase {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_patron_login);
+    protected int getLayoutId() { return R.layout.activity_web; }
+    @Override
+    protected String getHtmlFile() { return "login_patron.html"; }
 
-        EditText etNombre = findViewById(R.id.etNombrePatron);
-        EditText etViniedo = findViewById(R.id.etViniedo);
-        Button btnRegistrar = findViewById(R.id.btnRegistrarPatron);
+    @Override
+    protected Object getBridge() { return new Bridge(); }
 
-        btnRegistrar.setOnClickListener(v -> {
-            String nombre = etNombre.getText().toString().trim();
-            String viniedo = etViniedo.getText().toString().trim();
-            if (nombre.isEmpty() || viniedo.isEmpty()) {
-                Toast.makeText(this, "Completá nombre y número de viñedo", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            new Thread(() -> {
+    private class Bridge extends BridgeComun {
+        @JavascriptInterface
+        public boolean registrarPatron(String nombre, String viniedo) {
+            final boolean[] resultado = {false};
+            Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
                     body.put("nombre", nombre);
                     body.put("numero_viniedo", viniedo);
-
                     URL url = new URL(MainActivity.API_URL + "/api/patron/registrar");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
@@ -50,7 +41,6 @@ public class PatronLoginActivity extends AppCompatActivity {
                     OutputStream os = conn.getOutputStream();
                     os.write(body.toString().getBytes(StandardCharsets.UTF_8));
                     os.close();
-
                     int code = conn.getResponseCode();
                     java.io.InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
                     StringBuilder sb = new StringBuilder();
@@ -58,25 +48,24 @@ public class PatronLoginActivity extends AppCompatActivity {
                     while ((c = is.read()) != -1) sb.append((char) c);
                     JSONObject resp = new JSONObject(sb.toString());
                     conn.disconnect();
-
-                    runOnUiThread(() -> {
-                        if (resp.optBoolean("ok")) {
-                            Toast.makeText(this, "✅ Patrón registrado! N° " + resp.optString("patron_id"), Toast.LENGTH_LONG).show();
-                            // Guardar id y pasar a la pantalla del patrón
-                            getSharedPreferences("recibos", MODE_PRIVATE).edit()
-                                    .putString("rol", "patron")
-                                    .putInt("patron_id", resp.optInt("patron_id"))
-                                    .putString("nombre", nombre)
-                                    .apply();
-                            startActivity(new android.content.Intent(this, PatronPanelActivity.class));
-                        } else {
-                            Toast.makeText(this, "❌ " + resp.optString("error"), Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    if (resp.optBoolean("ok")) {
+                        resultado[0] = true;
+                        getSharedPreferences("recibos", MODE_PRIVATE).edit()
+                                .putString("rol", "patron")
+                                .putInt("patron_id", resp.optInt("patron_id"))
+                                .putString("nombre", nombre)
+                                .apply();
+                    }
                 } catch (Exception e) {
-                    runOnUiThread(() -> Toast.makeText(this, "Error de conexión: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    runOnUiThread(() -> Toast.makeText(PatronLoginActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
                 }
-            }).start();
-        });
+            });
+            t.start();
+            try { t.join(15000); } catch (InterruptedException e) {}
+            if (resultado[0]) {
+                runOnUiThread(() -> startActivity(new Intent(PatronLoginActivity.this, PatronPanelActivity.class)));
+            }
+            return resultado[0];
+        }
     }
 }

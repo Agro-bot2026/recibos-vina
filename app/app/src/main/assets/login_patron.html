@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07111f">
+  <title>ViñaRecibos · Registro patrón</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="card">
+      <div class="topbar">
+        <div class="eyebrow"><span>VR</span> Patrón</div>
+        <button class="back-btn" onclick="AndroidBridge.goBack()">← Volver</button>
+      </div>
+
+      <header class="brand">
+        <h1>Registro <span>Patrón</span></h1>
+        <p class="subtitle">Registrate con tu nombre y el número de viñedo</p>
+      </header>
+
+      <div class="actions">
+        <div class="field">
+          <label for="nombre">Nombre y apellido</label>
+          <input id="nombre" type="text" placeholder="Sosa, Angel José Vicente">
+        </div>
+        <div class="field">
+          <label for="viniedo">Número de viñedo</label>
+          <input id="viniedo" type="text" placeholder="V-00123">
+        </div>
+        <button class="btn btn-primary" onclick="registrar()">REGISTRARME</button>
+      </div>
+
+      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Mendoza, Argentina</span></footer>
+    </section>
+  </main>
+  <div class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const toast = document.querySelector('.toast');
+    let timer;
+    function notify(m) { toast.textContent = m; toast.classList.add('show'); clearTimeout(timer); timer = setTimeout(() => toast.classList.remove('show'), 2600); }
+
+    function registrar() {
+      const nombre = document.getElementById('nombre').value.trim();
+      const viniedo = document.getElementById('viniedo').value.trim();
+      if (!nombre || !viniedo) { notify('Completá nombre y número de viñedo'); return; }
+      const ok = AndroidBridge.registrarPatron(nombre, viniedo);
+      if (!ok) notify('Error al registrar. Verificá los datos.');
+    }
+  </script>
+</body>
+</html>

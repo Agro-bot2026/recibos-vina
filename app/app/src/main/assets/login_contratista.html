@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07111f">
+  <title>ViñaRecibos · Acceso contratista</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="card">
+      <div class="topbar">
+        <div class="eyebrow"><span>VR</span> Contratista</div>
+        <button class="back-btn" onclick="AndroidBridge.goBack()">← Volver</button>
+      </div>
+
+      <header class="brand">
+        <h1>Acceso <span>Contratista</span></h1>
+        <p class="subtitle">Entrá con tu CUIL y nombre (te registró tu patrón)</p>
+      </header>
+
+      <div class="actions">
+        <div class="field">
+          <label for="cuil">CUIL</label>
+          <input id="cuil" type="text" placeholder="20-27408102-4" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="nombre">Nombre y apellido</label>
+          <input id="nombre" type="text" placeholder="Carlos Fernando García">
+        </div>
+        <button class="btn btn-secondary" onclick="entrar()">ENTRAR</button>
+      </div>
+
+      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Mendoza, Argentina</span></footer>
+    </section>
+  </main>
+  <div class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const toast = document.querySelector('.toast');
+    let timer;
+    function notify(m) { toast.textContent = m; toast.classList.add('show'); clearTimeout(timer); timer = setTimeout(() => toast.classList.remove('show'), 2600); }
+
+    function entrar() {
+      const cuil = document.getElementById('cuil').value.trim();
+      const nombre = document.getElementById('nombre').value.trim();
+      if (!cuil || !nombre) { notify('Completá tu CUIL y nombre'); return; }
+      const ok = AndroidBridge.loginContratista(cuil, nombre);
+      if (!ok) notify('El nombre no coincide con el CUIL. Verificá.');
+    }
+  </script>
+</body>
+</html>
