@@ -29,5 +29,29 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Login patrón -->
+        <activity
+            android:name=".PatronLoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Login contratista -->
+        <activity
+            android:name=".ContratistaLoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Panel patrón -->
+        <activity
+            android:name=".PatronPanelActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Panel contratista -->
+        <activity
+            android:name=".ContratistaPanelActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 </manifest>
