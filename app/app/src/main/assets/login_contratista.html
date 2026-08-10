@@ -3,55 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#07111f">
+  <meta name="theme-color" content="#06101d">
   <title>ViñaRecibos · Acceso contratista</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <style>
+    :root { --bg:#06101d; --panel:rgba(13,27,47,.78); --line:rgba(170,209,255,.15); --text:#f4f8ff; --muted:#91a6bf; --blue:#5ba9ff; --blue-deep:#286dff; --mint:#5de1b2; --violet:#9c7bff; }
+    * { box-sizing:border-box; }
+    html,body { min-height:100%; }
+    body { min-height:100vh; margin:0; display:grid; place-items:center; padding:22px 18px; overflow:hidden; color:var(--text); font-family:'DM Sans',sans-serif; background:radial-gradient(circle at 14% 12%,rgba(40,109,255,.25),transparent 28rem),radial-gradient(circle at 90% 86%,rgba(93,225,178,.13),transparent 26rem),linear-gradient(145deg,#08182b 0%,var(--bg) 54%,#081321 100%); }
+    body::before { content:''; position:fixed; inset:0; pointer-events:none; opacity:.3; background-image:linear-gradient(rgba(133,175,221,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(133,175,221,.055) 1px,transparent 1px); background-size:42px 42px; mask-image:linear-gradient(to bottom,#000,transparent 78%); animation:gridDrift 18s linear infinite; }
+    body::after { content:''; position:fixed; inset:-100% 0; pointer-events:none; z-index:5; opacity:.07; background:repeating-linear-gradient(0deg,transparent 0 4px,rgba(143,203,255,.22) 5px,transparent 6px); animation:scanline 12s linear infinite; }
+    @keyframes gridDrift { to { background-position:42px 42px; } } @keyframes scanline { to { transform:translateY(100%); } } @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes glow { 50%{box-shadow:0 0 20px rgba(91,169,255,.35)} } @keyframes shimmer { to { transform:translateX(170%) skewX(-20deg); } } @keyframes borderFlow { to { background-position:200% center; } }
+    .shell { width:min(100%,470px); position:relative; isolation:isolate; perspective:1200px; }
+    .shell::before { content:''; position:absolute; z-index:-1; inset:12% -12% -12%; border-radius:50%; background:rgba(40,109,255,.15); filter:blur(64px); }
+    .card { position:relative; overflow:hidden; padding:29px 30px 25px; border:1px solid var(--line); border-radius:30px; background:linear-gradient(145deg,rgba(19,39,66,.84),rgba(7,19,34,.9)); box-shadow:0 28px 80px rgba(0,0,0,.44),inset 0 1px rgba(255,255,255,.08); backdrop-filter:blur(24px); transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition:transform .18s ease-out; }
+    .card::before { content:''; position:absolute; width:190px; height:190px; top:-120px; right:-80px; border-radius:50%; background:radial-gradient(circle,rgba(91,169,255,.25),transparent 68%); filter:blur(7px); animation:float 7s ease-in-out infinite; }
+    .card::after { content:''; position:absolute; top:0; left:12%; right:12%; height:1px; background:linear-gradient(90deg,transparent,var(--blue),var(--mint),var(--violet),transparent); background-size:200% auto; animation:borderFlow 5s linear infinite; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:27px; }
+    .eyebrow { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+    .status { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid rgba(93,225,178,.2); border-radius:999px; color:#a7f5d5; background:rgba(93,225,178,.08); font-size:11px; font-weight:600; }
+    .status::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 12px var(--mint); animation:glow 2s ease-in-out infinite; }
+    .brand { text-align:center; }
+    .brand-mark { width:76px; height:76px; display:grid; place-items:center; margin:0 auto 17px; border:1px solid rgba(152,203,255,.35); border-radius:23px; background:linear-gradient(145deg,rgba(72,145,255,.32),rgba(112,65,219,.28)); box-shadow:0 18px 40px rgba(40,109,255,.24),inset 0 1px rgba(255,255,255,.22); animation:float 5s ease-in-out infinite; }
+    .brand-mark svg { width:44px; filter:drop-shadow(0 4px 10px rgba(91,169,255,.35)); }
+    h1 { margin:0; font-family:'Space Grotesk',sans-serif; font-size:clamp(28px,8vw,37px); letter-spacing:-.045em; line-height:1.05; } h1 span { color:var(--blue); }
+    .subtitle { max-width:350px; margin:12px auto 27px; color:var(--muted); font-size:14px; line-height:1.55; }
+    .form { display:grid; gap:13px; }
+    .field-label { display:block; margin:0 0 7px 3px; color:#b5c8dc; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    .input-wrap { position:relative; }
+    .input-icon { position:absolute; top:50%; left:16px; width:20px; color:var(--blue); transform:translateY(-50%); pointer-events:none; }
+    input { width:100%; height:60px; padding:0 16px 0 48px; border:1px solid rgba(170,209,255,.17); border-radius:16px; outline:none; color:var(--text); background:rgba(255,255,255,.055); font:inherit; font-size:15px; transition:border-color .2s,box-shadow .2s,background .2s; }
+    input::placeholder { color:#6f849d; } input:focus { border-color:var(--blue); background:rgba(91,169,255,.08); box-shadow:0 0 0 4px rgba(91,169,255,.11),0 0 24px rgba(40,109,255,.12); }
+    .submit { position:relative; overflow:hidden; width:100%; height:61px; margin-top:8px; border:0; border-radius:16px; color:white; background:linear-gradient(105deg,#347cff,#2756d7); box-shadow:0 14px 30px rgba(40,109,255,.28); font:inherit; font-size:15px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; cursor:pointer; transition:transform .2s,filter .2s,box-shadow .2s; }
+    .submit::after { content:''; position:absolute; inset:0 auto 0 -75%; width:42%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent); }
+    .submit:hover { transform:translateY(-3px); filter:brightness(1.1); box-shadow:0 18px 36px rgba(40,109,255,.38); } .submit:hover::after { animation:shimmer .8s ease forwards; } .submit:active { transform:translateY(0); }
+    .help { margin:17px 0 0; color:#758aa2; text-align:center; font-size:12px; } .help a { color:#9bc8ff; text-decoration:none; } .help a:hover { text-decoration:underline; }
+    .footer { display:flex; justify-content:center; gap:9px; margin-top:21px; color:#71869f; font-size:11px; } .footer .dot { color:var(--blue); }
+    .toast { position:fixed; left:50%; bottom:22px; z-index:10; padding:12px 17px; border:1px solid rgba(91,169,255,.3); border-radius:12px; color:var(--text); background:#10243b; box-shadow:0 20px 50px rgba(0,0,0,.4); font-size:13px; transform:translate(-50%,140%); transition:transform .3s; } .toast.show { transform:translate(-50%,0); }
+    @media(max-width:420px){ .card{padding:24px 19px 21px;border-radius:25px}.topbar{margin-bottom:23px}.status{padding:6px 8px;font-size:10px} input{height:57px}.submit{height:58px} }
+    @media(prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;transform:none!important} }
+  </style>
 </head>
 <body>
   <main class="shell">
-    <section class="card">
-      <div class="topbar">
-        <div class="eyebrow"><span>VR</span> Contratista</div>
-        <button class="back-btn" onclick="AndroidBridge.goBack()">← Volver</button>
-      </div>
-
+    <section class="card" aria-labelledby="page-title">
+      <div class="topbar"><div class="eyebrow">VR · Acceso seguro</div><div class="status">Conexión segura</div></div>
       <header class="brand">
-        <h1>Acceso <span>Contratista</span></h1>
-        <p class="subtitle">Entrá con tu CUIL y nombre (te registró tu patrón)</p>
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M34 20C38 11 47 8 54 10C53 19 47 26 37 27" fill="#5DE1B2"/><path d="M33 25C27 16 19 14 11 17C13 27 21 32 31 31" fill="#9C7BFF"/><circle cx="22" cy="40" r="8" fill="#8CC7FF"/><circle cx="33" cy="40" r="8" fill="#6BABFF"/><circle cx="28" cy="49" r="8" fill="#5B91FF"/><circle cx="40" cy="49" r="8" fill="#4779E8"/><path d="M29 29C30 24 33 20 38 16" stroke="#F4F8FF" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+        <h1 id="page-title">Acceso <span>Contratista</span></h1>
+        <p class="subtitle">Ingresá con tu CUIL y nombre para consultar y firmar tus recibos digitales.</p>
       </header>
-
-      <div class="actions">
-        <div class="field">
-          <label for="cuil">CUIL</label>
-          <input id="cuil" type="text" placeholder="20-27408102-4" inputmode="numeric">
-        </div>
-        <div class="field">
-          <label for="nombre">Nombre y apellido</label>
-          <input id="nombre" type="text" placeholder="Carlos Fernando García">
-        </div>
-        <button class="btn btn-secondary" onclick="entrar()">ENTRAR</button>
-      </div>
-
-      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Mendoza, Argentina</span></footer>
+      <form class="form" id="login-form">
+        <div><label class="field-label" for="cuil">CUIL</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h2M15 10h3M14 15h4"/></svg><input id="cuil" name="cuil" type="text" inputmode="numeric" autocomplete="username" placeholder="Ej: 20-XXXXXXXX-X" required></div></div>
+        <div><label class="field-label" for="nombre">Nombre y apellido</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.3 3.1-5 7-5s6.2 1.7 7 5"/></svg><input id="nombre" name="nombre" type="text" autocomplete="name" placeholder="Ingresá tu nombre completo" required></div></div>
+        <button class="submit" type="submit">Ingresar al sistema</button>
+      </form>
+      <p class="help">¿Tenés problemas para ingresar? <a href="#" id="help-link">Solicitar ayuda</a></p>
+      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Versión 1.0</span></footer>
     </section>
   </main>
   <div class="toast" role="status" aria-live="polite"></div>
-
   <script>
-    const toast = document.querySelector('.toast');
-    let timer;
-    function notify(m) { toast.textContent = m; toast.classList.add('show'); clearTimeout(timer); timer = setTimeout(() => toast.classList.remove('show'), 2600); }
-
-    function entrar() {
-      const cuil = document.getElementById('cuil').value.trim();
-      const nombre = document.getElementById('nombre').value.trim();
-      if (!cuil || !nombre) { notify('Completá tu CUIL y nombre'); return; }
-      const ok = AndroidBridge.loginContratista(cuil, nombre);
-      if (!ok) notify('El nombre no coincide con el CUIL. Verificá.');
-    }
+    const card=document.querySelector('.card'),shell=document.querySelector('.shell'),toast=document.querySelector('.toast'); let timer;
+    function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2800)}
+    if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){shell.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;card.style.setProperty('--ry',(x*5)+'deg');card.style.setProperty('--rx',(y*-5)+'deg')});shell.addEventListener('pointerleave',()=>{card.style.setProperty('--ry','0deg');card.style.setProperty('--rx','0deg')})}
+    document.getElementById('login-form').addEventListener('submit',e=>{e.preventDefault();const cuil=document.getElementById('cuil').value.trim();const nombre=document.getElementById('nombre').value.trim();if(!cuil||!nombre){notify('Completá tu CUIL y nombre');return;}notify('Verificando tus datos de acceso…');const ok=AndroidBridge.loginContratista(cuil,nombre);if(!ok)notify('El nombre no coincide con el CUIL. Verificá.');});
+    document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();notify('Próximamente podrás solicitar ayuda desde aquí')});
   </script>
 </body>
 </html>
