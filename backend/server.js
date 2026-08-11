@@ -329,9 +329,11 @@ app.post('/api/ayuda', (req, res) => {
     reqApi.end();
 });
 
-// ─── Patrón: LEER recibo viejo (OCR) y devolver datos para convertir ───
+// ─── Patrón: LEER recibo (Gemini Vision + respaldo tesseract) ───
 const { execSync } = require('child_process');
 const TMP_OCR = '/tmp/recibos-ocr';
+const GEMINI_VENV = '/opt/recibos-vina/ocr/venv/bin/python';
+const GEMINI_SCRIPT = '/opt/recibos-vina/ocr/scan_gemini.py';
 
 app.post('/api/patron/leer_recibo', (req, res) => {
     const { archivo_base64, nombre_archivo } = req.body || {};
@@ -340,32 +342,39 @@ app.post('/api/patron/leer_recibo', (req, res) => {
     fs.mkdirSync(TMP_OCR, { recursive: true });
     const ext = (nombre_archivo || 'recibo.png').includes('.') ? nombre_archivo.split('.').pop().toLowerCase() : 'png';
     const inPath = path.join(TMP_OCR, `in_${Date.now()}.${ext}`);
-    const outBase = inPath.replace(/\.[^.]+$/, '');
 
     try {
         fs.writeFileSync(inPath, Buffer.from(archivo_base64, 'base64'));
 
-        // Si es PDF, convertirlo a PNG (página 1)
-        let imgPath = inPath;
-        if (ext === 'pdf' || ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'webp') {
+        // 1º: Gemini 2.5 Flash (preciso, devuelve JSON estructurado)
+        try {
+            const salida = execSync(`"${GEMINI_VENV}" "${GEMINI_SCRIPT}" "${inPath}" "${nombre_archivo || 'recibo.png'}"`,
+                { timeout: 90000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+            const datos = JSON.parse(salida.trim());
+            return res.json({ ok: true, datos, motor: 'gemini' });
+        } catch (e) {
+            console.log('Gemini falló, usando tesseract:', e.message.split('\n')[0]);
+        }
+
+        // 2º: tesseract (respaldo si Gemini falla)
+        try {
+            let imgPath = inPath;
             if (ext === 'pdf') {
                 try {
+                    const outBase = inPath.replace(/\.[^.]+$/, '');
                     execSync(`pdftoppm -png -r 200 -f 1 -l 1 "${inPath}" "${outBase}"`, { timeout: 30000 });
                     const png = `${outBase}-1.png`;
                     if (fs.existsSync(png)) imgPath = png;
-                } catch (e) { /* seguir con el pdf directo */ }
+                } catch (e) {}
             }
+            const texto = execSync(`tesseract "${imgPath}" stdout -l spa --psm 6 2>/dev/null`, { timeout: 60000, encoding: 'utf-8' });
+            const datos = extraerDatosRecibo(texto);
+            return res.json({ ok: true, texto, datos, motor: 'tesseract' });
+        } catch (e) {
+            return res.status(500).json({ ok: false, error: 'No pude leer el archivo' });
         }
-
-        // OCR con tesseract (español)
-        const texto = execSync(`tesseract "${imgPath}" stdout -l spa --psm 6 2>/dev/null`, { timeout: 60000, encoding: 'utf-8' });
-
-        // Extraer datos clave con regex
-        const datos = extraerDatosRecibo(texto);
-
-        res.json({ ok: true, texto, datos });
     } catch (e) {
-        res.status(500).json({ ok: false, error: 'No pude leer el archivo: ' + e.message });
+        res.status(500).json({ ok: false, error: 'Error procesando el archivo: ' + e.message });
     } finally {
         try { fs.unlinkSync(inPath); } catch (e) {}
     }
