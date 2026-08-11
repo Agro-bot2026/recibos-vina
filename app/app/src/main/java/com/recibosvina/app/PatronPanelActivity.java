@@ -174,8 +174,8 @@ public class PatronPanelActivity extends WebViewBase {
 
         /** ✨ Convertir al formato nuevo: usa los datos (corregidos) del recibo viejo */
         @JavascriptInterface
-        public boolean convertirRecibo(String cuil, String periodo, String rem, String norem, String concepto) {
-            final boolean[] resultado = {false};
+        public String convertirRecibo(String cuil, String periodo, String rem, String norem, String concepto) {
+            final String[] resultado = {"false"};
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
@@ -203,12 +203,15 @@ public class PatronPanelActivity extends WebViewBase {
                     while ((c = is.read()) != -1) sb.append((char) c);
                     JSONObject resp = new JSONObject(sb.toString());
                     conn.disconnect();
-                    resultado[0] = resp.optBoolean("ok");
-                    if (resultado[0]) {
+                    if (resp.optBoolean("ok")) {
+                        resultado[0] = "true";
                         runOnUiThread(() -> AdHelper.showInterstitial(PatronPanelActivity.this, () -> {}));
+                    } else {
+                        // Devolver el error real del backend (ej: "Contratista no encontrado")
+                        resultado[0] = "false|" + resp.optString("error", "Error desconocido");
                     }
                 } catch (Exception e) {
-                    runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    resultado[0] = "false|" + e.getMessage();
                 }
             });
             t.start();

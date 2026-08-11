@@ -235,9 +235,12 @@
       const concepto=document.getElementById('ocr-concepto').value.trim();
       if(!cuil||!periodo||!rem){notify('Faltan datos: CUIL, período y remunerativo');return;}
       notify('Convirtiendo al formato nuevo…');
-      const ok=AndroidBridge.convertirRecibo(cuil,periodo,rem,norem,concepto);
-      notify(ok?'✅ Recibo convertido al formato nuevo!':'❌ No se pudo convertir');
-      if(ok){cerrarVentana();document.getElementById('scuil').value='';document.getElementById('speriodo').value='';}
+      const res=AndroidBridge.convertirRecibo(cuil,periodo,rem,norem,concepto);
+      if(res==='true'){ notify('✅ Recibo convertido al formato nuevo!'); cerrarVentana(); document.getElementById('scuil').value=''; document.getElementById('speriodo').value=''; }
+      else {
+        const err=res.split('|').slice(1).join('|')||'No se pudo convertir';
+        notify('❌ '+err);
+      }
     }
 
     function verHistorial(){
