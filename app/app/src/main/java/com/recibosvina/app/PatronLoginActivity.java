@@ -6,13 +6,11 @@ import android.widget.Toast;
 
 import org.json.JSONObject;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
 /**
- * 🦇 Registro del PATRÓN (WebView premium)
+ * 🦇 Registro / login del PATRÓN (WebView premium)
+ * Ahora con contraseña real — el JS debe llamar:
+ *   registrarPatron(nombre, viniedo, password)
+ *   loginPatron(viniedo, password)
  */
 public class PatronLoginActivity extends WebViewBase {
 
@@ -25,91 +23,75 @@ public class PatronLoginActivity extends WebViewBase {
     protected Object getBridge() { return new Bridge(); }
 
     private class Bridge extends BridgeComun {
+
         @JavascriptInterface
-        public boolean registrarPatron(String nombre, String viniedo) {
-            final boolean[] resultado = {false};
+        public String registrarPatron(String nombre, String viniedo, String password) {
+            final String[] resultado = {"false|Error desconocido"};
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
                     body.put("nombre", nombre);
                     body.put("numero_viniedo", viniedo);
-                    URL url = new URL(MainActivity.API_URL + "/api/patron/registrar");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                    os.close();
-                    int code = conn.getResponseCode();
-                    java.io.InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    body.put("password", password);
+                    JSONObject resp = ApiClient.post(PatronLoginActivity.this, "/api/patron/registrar", body, false);
                     if (resp.optBoolean("ok")) {
-                        resultado[0] = true;
+                        ApiClient.guardarToken(PatronLoginActivity.this, resp.optString("token"));
                         getSharedPreferences("recibos", MODE_PRIVATE).edit()
                                 .putString("rol", "patron")
                                 .putInt("patron_id", resp.optInt("patron_id"))
                                 .putString("nombre", nombre)
                                 .apply();
+                        resultado[0] = "true";
+                    } else {
+                        resultado[0] = "false|" + resp.optString("error", "No se pudo registrar");
                     }
                 } catch (Exception e) {
-                    runOnUiThread(() -> Toast.makeText(PatronLoginActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    resultado[0] = "false|Error de conexión: " + e.getMessage();
                 }
             });
             t.start();
             try { t.join(15000); } catch (InterruptedException e) {}
-            if (resultado[0]) {
+            if (resultado[0].equals("true")) {
                 runOnUiThread(() -> startActivity(new Intent(PatronLoginActivity.this, PatronPanelActivity.class)));
+            } else {
+                final String err = resultado[0].substring(resultado[0].indexOf('|') + 1);
+                runOnUiThread(() -> Toast.makeText(PatronLoginActivity.this, err, Toast.LENGTH_LONG).show());
             }
             return resultado[0];
         }
 
-        /** 🔑 Login de patrón existente (viñedo + nombre) */
+        /** 🔑 Login de patrón existente (viñedo + contraseña) */
         @JavascriptInterface
-        public boolean loginPatron(String nombre, String viniedo) {
-            final boolean[] resultado = {false};
+        public String loginPatron(String viniedo, String password) {
+            final String[] resultado = {"false|Error desconocido"};
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
-                    body.put("nombre", nombre);
                     body.put("numero_viniedo", viniedo);
-                    URL url = new URL(MainActivity.API_URL + "/api/patron/login");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                    os.close();
-                    int code = conn.getResponseCode();
-                    java.io.InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    body.put("password", password);
+                    JSONObject resp = ApiClient.post(PatronLoginActivity.this, "/api/patron/login", body, false);
                     if (resp.optBoolean("ok")) {
-                        resultado[0] = true;
+                        ApiClient.guardarToken(PatronLoginActivity.this, resp.optString("token"));
                         getSharedPreferences("recibos", MODE_PRIVATE).edit()
                                 .putString("rol", "patron")
                                 .putInt("patron_id", resp.optInt("patron_id"))
                                 .putString("nombre", resp.optString("nombre"))
                                 .apply();
+                        resultado[0] = "true";
                     } else {
-                        runOnUiThread(() -> Toast.makeText(PatronLoginActivity.this, resp.optString("error"), Toast.LENGTH_LONG).show());
+                        resultado[0] = "false|" + resp.optString("error", "No se pudo iniciar sesión");
                     }
                 } catch (Exception e) {
-                    runOnUiThread(() -> Toast.makeText(PatronLoginActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    resultado[0] = "false|Error de conexión: " + e.getMessage();
                 }
             });
             t.start();
             try { t.join(15000); } catch (InterruptedException e) {}
-            if (resultado[0]) {
+            if (resultado[0].equals("true")) {
                 runOnUiThread(() -> startActivity(new Intent(PatronLoginActivity.this, PatronPanelActivity.class)));
+            } else {
+                final String err = resultado[0].substring(resultado[0].indexOf('|') + 1);
+                runOnUiThread(() -> Toast.makeText(PatronLoginActivity.this, err, Toast.LENGTH_LONG).show());
             }
             return resultado[0];
         }

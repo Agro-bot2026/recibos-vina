@@ -13,13 +13,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * 🦇 ViñaRecibos — Pantalla principal con WebView
- * Carga el diseño premium (index.html) y expone el bridge para:
- *   - getDeviceModel(): muestra el modelo del celular
- *   - openPatron() / openContratista(): navega a las pantallas
  */
 public class MainActivity extends AppCompatActivity {
 
-    public static final String API_URL = "http://157.250.202.243:8400";
+    // 🔐 Contabo con HTTPS (antes: http://157.250.202.243:8400)
+    public static final String API_URL = "https://recibos.charly-tricks.dev";
     private boolean appOpenIntentado = false;
     private WebView webView;
 
@@ -29,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Inicializar AdMob
         AdHelper.init(this);
 
         WebView webView = findViewById(R.id.webView);
@@ -44,8 +41,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 📢 Anuncio de apertura (App Open) — con retraso para que alcance a cargar
-        // la primera vez (el anuncio tarda ~2-3s en estar listo)
         if (!appOpenIntentado) {
             appOpenIntentado = true;
             webView.postDelayed(() -> AdHelper.showAppOpen(this), 3000);
@@ -53,12 +48,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class Bridge {
-        /** Devuelve el modelo del dispositivo (ej: "TCL 20 SE") */
         @JavascriptInterface
         public String getDeviceModel() {
             String manufacturer = Build.MANUFACTURER;
             String model = Build.MODEL;
-            // "TCL 20 SE" en vez de "TCL 20 SE (T671E)" si es muy largo
             return manufacturer + " " + model;
         }
 
@@ -72,14 +65,15 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new android.content.Intent(MainActivity.this, ContratistaLoginActivity.class));
         }
 
-        /** 👆 Huella dactilar: entra directo con el CUIL guardado */
+        /** 👆 Huella dactilar: entra directo con la sesión guardada (CUIL + token) */
         @JavascriptInterface
         public void biometricAuth() {
             runOnUiThread(() -> BiometricHelper.autenticar(MainActivity.this, () -> {
                 SharedPreferences prefs = getSharedPreferences("recibos", MODE_PRIVATE);
                 String cuil = prefs.getString("cuil", "");
-                if (cuil.isEmpty()) {
-                    Toast.makeText(MainActivity.this, "Primero entrá una vez con CUIL y nombre", Toast.LENGTH_LONG).show();
+                String token = prefs.getString("token", "");
+                if (cuil.isEmpty() || token.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "Primero entrá una vez con CUIL, nombre y PIN", Toast.LENGTH_LONG).show();
                     return;
                 }
                 Toast.makeText(MainActivity.this, "✅ Huella OK! Entrando...", Toast.LENGTH_SHORT).show();
@@ -87,19 +81,16 @@ public class MainActivity extends AppCompatActivity {
             }));
         }
 
-        /** 📋 Política de privacidad */
         @JavascriptInterface
         public void openPrivacy() {
             startActivity(new android.content.Intent(MainActivity.this, PrivacyActivity.class));
         }
 
-        /** 🤖 Centro de ayuda */
         @JavascriptInterface
         public void openHelp() {
             startActivity(new android.content.Intent(MainActivity.this, HelpActivity.class));
         }
 
-        /** ⓘ Gestión de anuncios — link a la config de anuncios de Google */
         @JavascriptInterface
         public void openAdSettings() {
             android.content.Intent i = new android.content.Intent(

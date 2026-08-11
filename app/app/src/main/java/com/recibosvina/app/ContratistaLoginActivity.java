@@ -6,14 +6,10 @@ import android.widget.Toast;
 
 import org.json.JSONObject;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-
 /**
  * 🦇 Login del CONTRATISTA (WebView premium)
- * Entra con CUIL + nombre (los registró su patrón)
+ * Entra con CUIL + nombre + PIN (el patrón le dio el PIN al registrarlo).
+ * El JS debe llamar: loginContratista(cuil, nombre, pin)
  */
 public class ContratistaLoginActivity extends WebViewBase {
 
@@ -27,42 +23,37 @@ public class ContratistaLoginActivity extends WebViewBase {
 
     private class Bridge extends BridgeComun {
         @JavascriptInterface
-        public boolean loginContratista(String cuil, String nombre) {
-            final boolean[] resultado = {false};
-            final String[] error = {""};
+        public String loginContratista(String cuil, String nombre, String pin) {
+            final String[] resultado = {"false|Error desconocido"};
             Thread t = new Thread(() -> {
                 try {
-                    URL url = new URL(MainActivity.API_URL + "/api/contratista/recibos?cuil=" + URLEncoder.encode(cuil, "UTF-8") + "&nombre=" + URLEncoder.encode(nombre, "UTF-8"));
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
-                    int code = conn.getResponseCode();
-                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    JSONObject body = new JSONObject();
+                    body.put("cuil", cuil);
+                    body.put("nombre", nombre);
+                    body.put("pin", pin);
+                    JSONObject resp = ApiClient.post(ContratistaLoginActivity.this, "/api/contratista/validar_acceso", body, false);
                     if (resp.optBoolean("ok")) {
-                        resultado[0] = true;
+                        ApiClient.guardarToken(ContratistaLoginActivity.this, resp.optString("token"));
                         getSharedPreferences("recibos", MODE_PRIVATE).edit()
                                 .putString("rol", "contratista")
                                 .putString("cuil", cuil)
                                 .putString("nombre", nombre)
                                 .apply();
+                        resultado[0] = "true";
                     } else {
-                        error[0] = resp.optString("error");
+                        resultado[0] = "false|" + resp.optString("error", "No se pudo iniciar sesión");
                     }
                 } catch (Exception e) {
-                    error[0] = e.getMessage();
+                    resultado[0] = "false|Error de conexión: " + e.getMessage();
                 }
             });
             t.start();
             try { t.join(15000); } catch (InterruptedException e) {}
-            if (!resultado[0] && !error[0].isEmpty()) {
-                runOnUiThread(() -> Toast.makeText(ContratistaLoginActivity.this, error[0], Toast.LENGTH_LONG).show());
-            }
-            if (resultado[0]) {
+            if (resultado[0].equals("true")) {
                 runOnUiThread(() -> startActivity(new Intent(ContratistaLoginActivity.this, ContratistaPanelActivity.class)));
+            } else {
+                final String err = resultado[0].substring(resultado[0].indexOf('|') + 1);
+                runOnUiThread(() -> Toast.makeText(ContratistaLoginActivity.this, err, Toast.LENGTH_LONG).show());
             }
             return resultado[0];
         }

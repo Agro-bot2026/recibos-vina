@@ -56,8 +56,9 @@
         <p class="subtitle">Registrate con tu nombre y el número de viñedo para administrar tus recibos digitales.</p>
       </header>
       <form class="form" id="login-form">
-        <div><label class="field-label" for="nombre">Nombre y apellido</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.3 3.1-5 7-5s6.2 1.7 7 5"/></svg><input id="nombre" name="nombre" type="text" autocomplete="name" placeholder="Ingresá tu nombre y apellido" required></div></div>
+        <div id="campo-nombre-wrap"><label class="field-label" for="nombre">Nombre y apellido</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.3 3.1-5 7-5s6.2 1.7 7 5"/></svg><input id="nombre" name="nombre" type="text" autocomplete="name" placeholder="Ingresá tu nombre y apellido" required></div></div>
         <div><label class="field-label" for="vinedo">Número de viñedo</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 20h18M5 20V9l7-4 7 4v11M8 20v-6h8v6M9 10h.01M12 10h.01M15 10h.01"/></svg><input id="vinedo" name="vinedo" type="text" autocomplete="off" placeholder="Ej: V-00123" required></div></div>
+        <div><label class="field-label" for="password">Contraseña</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres" minlength="6" required></div></div>
         <button class="submit" type="submit">Registrarme</button>
       </form>
       <p class="help">¿Ya tenés una cuenta? <a href="#" id="help-link">Ingresar aquí</a> · <a href="#" id="privacy-link">Privacidad</a></p>
@@ -74,27 +75,34 @@
       e.preventDefault();
       const nombre=document.getElementById('nombre').value.trim();
       const vinedo=document.getElementById('vinedo').value.trim();
-      if(!nombre||!vinedo){notify('Completá tu nombre y número de viñedo');return;}
+      const password=document.getElementById('password').value;
+      if(!vinedo||!password){notify('Completá el número de viñedo y la contraseña');return;}
       if(modo==='registrar'){
+        if(!nombre){notify('Completá tu nombre y apellido');return;}
+        if(password.length<6){notify('La contraseña debe tener al menos 6 caracteres');return;}
         notify('Creando tu cuenta de patrón…');
-        const ok=AndroidBridge.registrarPatron(nombre,vinedo);
-        if(!ok)notify('Error al registrar. Verificá los datos.');
+        const res=AndroidBridge.registrarPatron(nombre,vinedo,password);
+        if(res!=='true'){const err=res.split('|').slice(1).join('|')||'Error al registrar';notify('❌ '+err);}
       } else {
         notify('Verificando tus datos…');
-        const ok=AndroidBridge.loginPatron(nombre,vinedo);
-        if(!ok)notify('No se encontró tu cuenta. Verificá viñedo y nombre.');
+        const res=AndroidBridge.loginPatron(vinedo,password);
+        if(res!=='true'){const err=res.split('|').slice(1).join('|')||'No se pudo iniciar sesión';notify('❌ '+err);}
       }
     });
     document.getElementById('help-link').addEventListener('click',e=>{
       e.preventDefault();
       if(modo==='registrar'){
         modo='ingresar';
+        document.getElementById('campo-nombre-wrap').style.display='none';
+        document.getElementById('nombre').required=false;
         document.querySelector('.submit').textContent='Ingresar al sistema';
         document.querySelector('.brand h1').innerHTML='Ingresar como <span>Patrón</span>';
-        document.querySelector('.subtitle').textContent='Entrá con tu nombre y el número de viñedo de tu cuenta.';
+        document.querySelector('.subtitle').textContent='Entrá con tu número de viñedo y tu contraseña.';
         document.getElementById('help-link').textContent='Registrarme';
       } else {
         modo='registrar';
+        document.getElementById('campo-nombre-wrap').style.display='';
+        document.getElementById('nombre').required=true;
         document.querySelector('.submit').textContent='Registrarme';
         document.querySelector('.brand h1').innerHTML='Registro de <span>Patrón</span>';
         document.querySelector('.subtitle').textContent='Registrate con tu nombre y el número de viñedo para administrar tus recibos digitales.';

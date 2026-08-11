@@ -4,29 +4,22 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.webkit.JavascriptInterface;
-import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient;
-import android.webkit.WebView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 /**
  * 🦇 Panel del CONTRATISTA (WebView premium)
- * Ve recibos, sube firma (foto) y firma
+ * Ve recibos, sube firma (foto) y firma.
+ * Ya NO manda cuil en cada request: el backend identifica al contratista
+ * por el token de sesión.
  */
 public class ContratistaPanelActivity extends WebViewBase {
 
     private static final int PICK_FIRMA = 200;
-    private ValueCallback<Uri[]> filePathCallback;
 
     @Override
     protected int getLayoutId() { return R.layout.activity_web; }
@@ -36,33 +29,39 @@ public class ContratistaPanelActivity extends WebViewBase {
     @Override
     protected Object getBridge() { return new Bridge(); }
 
-    private String getCuil() { return getSharedPreferences("recibos", MODE_PRIVATE).getString("cuil", ""); }
     private String getNombre() { return getSharedPreferences("recibos", MODE_PRIVATE).getString("nombre", ""); }
-
-    /** Permitir elegir imagen para la firma desde el WebView */
-    private void setupFileChooser() {
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-                ContratistaPanelActivity.this.filePathCallback = filePathCallback;
-                Intent intent = fileChooserParams.createIntent();
-                startActivityForResult(intent, PICK_FIRMA);
-                return true;
-            }
-        });
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_FIRMA) {
-            if (filePathCallback != null) {
-                Uri[] results = null;
-                if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
-                    results = new Uri[]{data.getData()};
-                }
-                filePathCallback.onReceiveValue(results);
-                filePathCallback = null;
+        if (requestCode == PICK_FIRMA && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+            Uri uri = data.getData();
+            try {
+                InputStream is = getContentResolver().openInputStream(uri);
+                byte[] bytes = new byte[is.available()];
+                is.read(bytes);
+                is.close();
+                String base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+                new Thread(() -> {
+                    try {
+                        JSONObject body = new JSONObject();
+                        body.put("firma_base64", base64);
+                        JSONObject resp = ApiClient.post(ContratistaPanelActivity.this, "/api/contratista/firma", body, true);
+                        if (resp.optBoolean("ok")) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(ContratistaPanelActivity.this, "✅ Firma guardada!", Toast.LENGTH_SHORT).show();
+                                AdHelper.showInterstitial(ContratistaPanelActivity.this, () -> {});
+                            });
+                        } else {
+                            final String err = resp.optString("error", "Error guardando la firma");
+                            runOnUiThread(() -> Toast.makeText(ContratistaPanelActivity.this, err, Toast.LENGTH_LONG).show());
+                        }
+                    } catch (Exception e) {
+                        runOnUiThread(() -> Toast.makeText(ContratistaPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    }
+                }).start();
+            } catch (Exception e) {
+                Toast.makeText(this, "Error leyendo la imagen: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -74,8 +73,6 @@ public class ContratistaPanelActivity extends WebViewBase {
         @JavascriptInterface
         public void subirFirma() {
             runOnUiThread(() -> {
-                setupFileChooser();
-                // Abrir selector de imagen
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("image/*");
                 startActivityForResult(intent, PICK_FIRMA);
@@ -87,19 +84,13 @@ public class ContratistaPanelActivity extends WebViewBase {
             final String[] result = {"[]"};
             Thread t = new Thread(() -> {
                 try {
-                    URL url = new URL(MainActivity.API_URL + "/api/contratista/recibos?cuil=" + URLEncoder.encode(getCuil(), "UTF-8") + "&nombre=" + URLEncoder.encode(getNombre(), "UTF-8"));
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
-                    int code = conn.getResponseCode();
-                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    JSONObject resp = ApiClient.get(ContratistaPanelActivity.this, "/api/contratista/recibos", true);
                     if (resp.optBoolean("ok")) {
                         JSONArray arr = resp.optJSONArray("recibos");
                         result[0] = arr != null ? arr.toString() : "[]";
+                    } else {
+                        final String err = resp.optString("error", "Error desconocido");
+                        runOnUiThread(() -> Toast.makeText(ContratistaPanelActivity.this, err, Toast.LENGTH_LONG).show());
                     }
                 } catch (Exception e) {
                     runOnUiThread(() -> Toast.makeText(ContratistaPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
@@ -117,25 +108,10 @@ public class ContratistaPanelActivity extends WebViewBase {
                 try {
                     JSONObject body = new JSONObject();
                     body.put("recibo_id", reciboId);
-                    body.put("cuil", getCuil());
-                    URL url = new URL(MainActivity.API_URL + "/api/contratista/firmar");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                    os.close();
-                    int code = conn.getResponseCode();
-                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    JSONObject resp = ApiClient.post(ContratistaPanelActivity.this, "/api/contratista/firmar", body, true);
                     resultado[0] = resp.optBoolean("ok");
-                    if (!resultado[0] && resp.has("error")) {
-                        final String err = resp.optString("error");
+                    if (!resultado[0]) {
+                        final String err = resp.optString("error", "Error desconocido");
                         runOnUiThread(() -> Toast.makeText(ContratistaPanelActivity.this, err, Toast.LENGTH_LONG).show());
                     }
                 } catch (Exception e) {

@@ -5,33 +5,26 @@ import android.content.Intent;
 import android.net.Uri;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient;
 import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 /**
  * 🦇 Panel del PATRÓN (WebView premium)
- * Registra contratistas, genera recibos, sube recibos y ve el historial
+ * Registra contratistas, genera recibos, sube recibos y ve el historial.
+ * Ya NO manda patron_id: el backend lo saca del token de sesión.
  */
 public class PatronPanelActivity extends WebViewBase {
 
     private static final int PICK_RECIBO = 300;
     private ValueCallback<Uri[]> filePathCallback;
-    private String pendingCuil = "";
-    private String pendingPeriodo = "";
     private String ultimoBase64 = null;
     private String ultimoNombre = "recibo";
     private String ultimoPeriodo = "";
-    private org.json.JSONObject ultimosDatos = null;
+    private JSONObject ultimosDatos = null;
 
     @Override
     protected int getLayoutId() { return R.layout.activity_web; }
@@ -41,42 +34,30 @@ public class PatronPanelActivity extends WebViewBase {
     @Override
     protected Object getBridge() { return new Bridge(); }
 
-    private int getPatronId() {
-        return getSharedPreferences("recibos", MODE_PRIVATE).getInt("patron_id", 0);
-    }
-
     private class Bridge extends BridgeComun {
+
+        /** Registrar contratista: ahora incluye el PIN que le vas a dar al trabajador */
         @JavascriptInterface
-        public boolean registrarContratista(String cuil, String nombre) {
-            final boolean[] resultado = {false};
+        public String registrarContratista(String cuil, String nombre, String pin) {
+            final String[] resultado = {"false|Error desconocido"};
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
-                    body.put("patron_id", getPatronId());
                     body.put("cuil", cuil);
                     body.put("nombre", nombre);
-                    URL url = new URL(MainActivity.API_URL + "/api/patron/contratista");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                    os.close();
-                    int code = conn.getResponseCode();
-                    java.io.InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
-                    resultado[0] = resp.optBoolean("ok");
+                    body.put("pin", pin);
+                    JSONObject resp = ApiClient.post(PatronPanelActivity.this, "/api/patron/contratista", body, true);
+                    resultado[0] = resp.optBoolean("ok") ? "true" : "false|" + resp.optString("error", "Error");
                 } catch (Exception e) {
-                    runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    resultado[0] = "false|Error: " + e.getMessage();
                 }
             });
             t.start();
             try { t.join(15000); } catch (InterruptedException e) {}
+            if (!resultado[0].equals("true")) {
+                final String err = resultado[0].substring(resultado[0].indexOf('|') + 1);
+                runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, err, Toast.LENGTH_LONG).show());
+            }
             return resultado[0];
         }
 
@@ -86,30 +67,17 @@ public class PatronPanelActivity extends WebViewBase {
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
-                    body.put("patron_id", getPatronId());
                     body.put("contratista_cuil", cuil);
                     body.put("periodo", periodo);
                     body.put("concepto", concepto);
                     body.put("remunerativo", Double.parseDouble(rem.replace(".", "").replace(",", ".")));
-                    URL url = new URL(MainActivity.API_URL + "/api/patron/generar_recibo");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                    os.close();
-                    int code = conn.getResponseCode();
-                    java.io.InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    JSONObject resp = ApiClient.post(PatronPanelActivity.this, "/api/patron/generar_recibo", body, true);
                     resultado[0] = resp.optBoolean("ok");
                     if (resultado[0]) {
-                        // 📢 Anuncio al generar el recibo
                         runOnUiThread(() -> AdHelper.showInterstitial(PatronPanelActivity.this, () -> {}));
+                    } else {
+                        final String err = resp.optString("error", "Error desconocido");
+                        runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, err, Toast.LENGTH_LONG).show());
                     }
                 } catch (Exception e) {
                     runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
@@ -129,7 +97,6 @@ public class PatronPanelActivity extends WebViewBase {
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 startActivityForResult(Intent.createChooser(intent, "Elegí el recibo (foto o PDF)"), PICK_RECIBO);
             });
-            // El resultado llega por onActivityResult → procesarReciboElegido()
             return "{\"ok\":true,\"elegido\":true}";
         }
 
@@ -143,26 +110,15 @@ public class PatronPanelActivity extends WebViewBase {
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
-                    body.put("patron_id", getPatronId());
                     body.put("contratista_cuil", cuil);
                     body.put("periodo", per);
                     body.put("archivo_base64", b64);
-                    URL url = new URL(MainActivity.API_URL + "/api/patron/subir_recibo");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                    os.close();
-                    int code = conn.getResponseCode();
-                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    JSONObject resp = ApiClient.post(PatronPanelActivity.this, "/api/patron/subir_recibo", body, true);
                     resultado[0] = resp.optBoolean("ok");
+                    if (!resultado[0]) {
+                        final String err = resp.optString("error", "Error desconocido");
+                        runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, err, Toast.LENGTH_LONG).show());
+                    }
                 } catch (Exception e) {
                     runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
                 }
@@ -175,11 +131,10 @@ public class PatronPanelActivity extends WebViewBase {
         /** ✨ Convertir al formato nuevo: usa los datos (corregidos) del recibo viejo */
         @JavascriptInterface
         public String convertirRecibo(String cuil, String periodo, String rem, String norem, String concepto) {
-            final String[] resultado = {"false"};
+            final String[] resultado = {"false|Error desconocido"};
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
-                    body.put("patron_id", getPatronId());
                     body.put("contratista_cuil", cuil);
                     body.put("periodo", periodo);
                     body.put("concepto", concepto.isEmpty() ? "HAS EN PRODUCCIÓN" : concepto);
@@ -188,26 +143,11 @@ public class PatronPanelActivity extends WebViewBase {
                     try { nr = Double.parseDouble(norem.replace(".", "").replace(",", ".")); } catch (Exception e) {}
                     body.put("remunerativo", r);
                     body.put("no_remunerativo", nr);
-                    URL url = new URL(MainActivity.API_URL + "/api/patron/generar_recibo");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                    os.close();
-                    int code = conn.getResponseCode();
-                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    JSONObject resp = ApiClient.post(PatronPanelActivity.this, "/api/patron/generar_recibo", body, true);
                     if (resp.optBoolean("ok")) {
                         resultado[0] = "true";
                         runOnUiThread(() -> AdHelper.showInterstitial(PatronPanelActivity.this, () -> {}));
                     } else {
-                        // Devolver el error real del backend (ej: "Contratista no encontrado")
                         resultado[0] = "false|" + resp.optString("error", "Error desconocido");
                     }
                 } catch (Exception e) {
@@ -225,19 +165,13 @@ public class PatronPanelActivity extends WebViewBase {
             final String[] result = {"[]"};
             Thread t = new Thread(() -> {
                 try {
-                    URL url = new URL(MainActivity.API_URL + "/api/patron/recibos?patron_id=" + getPatronId());
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
-                    int code = conn.getResponseCode();
-                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    int c;
-                    while ((c = is.read()) != -1) sb.append((char) c);
-                    JSONObject resp = new JSONObject(sb.toString());
-                    conn.disconnect();
+                    JSONObject resp = ApiClient.get(PatronPanelActivity.this, "/api/patron/recibos", true);
                     if (resp.optBoolean("ok")) {
                         JSONArray arr = resp.optJSONArray("recibos");
                         result[0] = arr != null ? arr.toString() : "[]";
+                    } else {
+                        final String err = resp.optString("error", "Error desconocido");
+                        runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, err, Toast.LENGTH_LONG).show());
                     }
                 } catch (Exception e) {
                     runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
@@ -261,40 +195,26 @@ public class PatronPanelActivity extends WebViewBase {
                 is.close();
                 ultimoBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
                 ultimoNombre = getFileName(uri);
-                // Llamar al OCR del backend
                 new Thread(() -> {
                     try {
                         JSONObject body = new JSONObject();
                         body.put("archivo_base64", ultimoBase64);
                         body.put("nombre_archivo", ultimoNombre);
-                        URL url = new URL(MainActivity.API_URL + "/api/patron/leer_recibo");
-                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                        conn.setRequestMethod("POST");
-                        conn.setRequestProperty("Content-Type", "application/json");
-                        conn.setDoOutput(true);
-                        OutputStream os = conn.getOutputStream();
-                        os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                        os.close();
-                        int code = conn.getResponseCode();
-                        InputStream is2 = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                        StringBuilder sb = new StringBuilder();
-                        int c;
-                        while ((c = is2.read()) != -1) sb.append((char) c);
-                        JSONObject resp = new JSONObject(sb.toString());
-                        conn.disconnect();
+                        JSONObject resp = ApiClient.post(PatronPanelActivity.this, "/api/patron/leer_recibo", body, true);
                         if (resp.optBoolean("ok")) {
                             ultimosDatos = resp.optJSONObject("datos");
                             if (ultimosDatos == null) ultimosDatos = new JSONObject();
-                            // Enviar los datos al JS
+                            final JSONObject datosFinal = ultimosDatos;
                             runOnUiThread(() -> {
-                                String json = ultimosDatos.toString().replace("'", "\\'");
+                                String json = datosFinal.toString().replace("'", "\\'");
                                 webView.evaluateJavascript("reciboLeido('" + json + "')", null);
                             });
                         } else {
-                            runOnUiThread(() -> Toast.makeText(this, "No pude leer: " + resp.optString("error"), Toast.LENGTH_LONG).show());
+                            final String err = resp.optString("error", "No pude leer el archivo");
+                            runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, err, Toast.LENGTH_LONG).show());
                         }
                     } catch (Exception e) {
-                        runOnUiThread(() -> Toast.makeText(this, "Error OCR: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                        runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error OCR: " + e.getMessage(), Toast.LENGTH_LONG).show());
                     }
                 }).start();
             } catch (Exception e) {
