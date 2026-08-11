@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String API_URL = "http://157.250.202.243:8400";
     private boolean appOpenIntentado = false;
+    private WebView webView;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -32,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
         AdHelper.init(this);
 
         WebView webView = findViewById(R.id.webView);
+        this.webView = webView;
         webView.setWebViewClient(new WebViewClient());
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
