@@ -97,7 +97,9 @@
     }
 
     function cargarRecibos() {
-      const recibos = AndroidBridge.verRecibos();
+      const raw = AndroidBridge.verRecibos();
+      let recibos = [];
+      try { recibos = JSON.parse(raw); } catch(e) { recibos = []; }
       renderRecibos(recibos);
     }
 
