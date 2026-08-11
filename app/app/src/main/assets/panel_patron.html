@@ -30,7 +30,7 @@
     .brand-mark svg { width:44px; filter:drop-shadow(0 4px 10px rgba(91,169,255,.35)); }
     h1 { margin:0; font-family:'Space Grotesk',sans-serif; font-size:clamp(28px,8vw,37px); letter-spacing:-.045em; line-height:1.05; } h1 span { color:var(--blue); }
     .subtitle { max-width:350px; margin:12px auto 27px; color:var(--muted); font-size:14px; line-height:1.55; }
-    .actions { display:grid; gap:13px; } .action { position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; width:100%; min-height:72px; padding:14px 18px; border:1px solid transparent; border-radius:17px; color:white; font:inherit; text-align:left; cursor:pointer; transition:transform .2s,filter .2s,box-shadow .2s; } .action:hover { transform:translateY(-3px); filter:brightness(1.09); } .action::after { content:''; position:absolute; inset:0 auto 0 -75%; width:42%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent); transform:skewX(-20deg); } .action:hover::after { animation:shimmer .8s ease forwards; } .action-register { background:linear-gradient(105deg,#347cff,#2756d7); box-shadow:0 14px 30px rgba(40,109,255,.28); } .action-generate { background:linear-gradient(105deg,#168d77,#126553); box-shadow:0 14px 30px rgba(22,141,119,.22); } .action-privacy { background:rgba(255,255,255,.06); border-color:var(--line); } .action-icon { width:40px; height:40px; flex:0 0 40px; display:grid; place-items:center; border-radius:13px; background:rgba(255,255,255,.14); } .action-icon svg { width:22px; height:22px; } .action-copy { flex:1; } .action-label { display:block; font-size:15px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; } .action-hint { display:block; margin-top:3px; color:rgba(255,255,255,.72); font-size:11px; } .action-arrow { width:18px; opacity:.75; }
+    .actions { display:grid; gap:13px; } .action { position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; width:100%; min-height:72px; padding:14px 18px; border:1px solid transparent; border-radius:17px; color:white; font:inherit; text-align:left; cursor:pointer; transition:transform .2s,filter .2s,box-shadow .2s; } .action:hover { transform:translateY(-3px); filter:brightness(1.09); } .action::after { content:''; position:absolute; inset:0 auto 0 -75%; width:42%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent); transform:skewX(-20deg); } .action:hover::after { animation:shimmer .8s ease forwards; } .action-register { background:linear-gradient(105deg,#347cff,#2756d7); box-shadow:0 14px 30px rgba(40,109,255,.28); } .action-upload { background:linear-gradient(105deg,#7c5cff,#5a3fd0); box-shadow:0 14px 30px rgba(124,92,255,.24); } .action-list { background:linear-gradient(105deg,#e8853a,#c96a1e); box-shadow:0 14px 30px rgba(232,133,58,.22); } .action-privacy { background:rgba(255,255,255,.06); border-color:var(--line); } .action-icon { width:40px; height:40px; flex:0 0 40px; display:grid; place-items:center; border-radius:13px; background:rgba(255,255,255,.14); } .action-icon svg { width:22px; height:22px; } .action-copy { flex:1; } .action-label { display:block; font-size:15px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; } .action-hint { display:block; margin-top:3px; color:rgba(255,255,255,.72); font-size:11px; } .action-arrow { width:18px; opacity:.75; }
     .panel { display:none; }
     .panel.show { display:grid; gap:13px; margin-top:22px; animation:float .4s ease; }
     .panel-title { color:#dcecff; font-family:'Space Grotesk',sans-serif; font-size:15px; margin:6px 0 2px; }
@@ -71,8 +71,7 @@
       <!-- Menú principal -->
       <div class="actions" id="menu">
         <button class="action action-register" type="button" data-panel="registrar"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><span class="action-copy"><span class="action-label">Registrar contratista</span><span class="action-hint">Dale acceso a un trabajador con su CUIL</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button class="action action-generate" type="button" data-panel="generar"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg></span><span class="action-copy"><span class="action-label">Generar recibo</span><span class="action-hint">Creá el recibo en formato nuevo (Dto. 407/2026)</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button class="action action-upload" type="button" data-panel="subir"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span><span class="action-copy"><span class="action-label">Subir recibo</span><span class="action-hint">Subí una foto o PDF de un recibo existente</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="action action-upload" type="button" data-panel="subir"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span><span class="action-copy"><span class="action-label">Subir recibo</span><span class="action-hint">Subí una foto o PDF — la app lo lee y te ofrece convertirlo</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
         <button class="action action-list" type="button" data-panel="historial"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><span class="action-copy"><span class="action-label">Mis recibos</span><span class="action-hint">Historial de todo lo que cargaste</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
         <button class="action action-privacy" type="button" data-panel="privacidad"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="action-copy"><span class="action-label">Política de privacidad</span><span class="action-hint">Conocé cómo protegemos tus datos</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
       </div>
@@ -98,14 +97,24 @@
         <p class="hint">💡 El recibo sale en formato nuevo (Decreto 407/2026): 4 secciones + gráfico de costos. El contratista lo firma desde su teléfono.</p>
       </div>
 
-      <!-- Panel: subir recibo -->
+      <!-- Panel: subir recibo (con OCR y conversión) -->
       <div class="panel" id="panel-subir">
         <button class="panel-back" onclick="showMenu()">← Volver al menú</button>
         <h2 class="panel-title">Subir recibo</h2>
         <div class="field"><label class="field-label" for="scuil">CUIL del contratista</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h2M15 10h3M14 15h4"/></svg><input id="scuil" type="text" inputmode="numeric" placeholder="Ej: 20-XXXXXXXX-X"></div></div>
         <div class="field"><label class="field-label" for="speriodo">Período</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg><input id="speriodo" type="text" placeholder="Ej: MARZO 2026"></div></div>
-        <button class="submit" onclick="subirRecibo()">📎 Elegir archivo y subir</button>
-        <p class="hint">📸 Podés subir una foto o un PDF del recibo. Queda registrado para que el contratista lo vea y firme.</p>
+        <button class="submit" onclick="elegirArchivo()">📎 Elegir recibo (foto/PDF)</button>
+        <p class="hint">📸 Subí la foto o PDF del recibo. La app lo LEE y te avisa qué datos encontró.</p>
+
+        <!-- Resultado del OCR -->
+        <div id="ocr-resultado" style="display:none;margin-top:10px;padding:14px;border:1px solid rgba(93,225,178,.3);border-radius:15px;background:rgba(93,225,178,.07)">
+          <div style="font-size:13px;font-weight:700;color:#a7f5d5;margin-bottom:8px">🔍 Datos leídos del recibo:</div>
+          <div id="ocr-datos" style="font-size:12px;color:#dcecff;line-height:1.7"></div>
+          <div style="display:grid;gap:9px;margin-top:12px">
+            <button class="submit" style="background:linear-gradient(105deg,#168d77,#126553);box-shadow:0 12px 26px rgba(22,141,119,.24)" onclick="guardarTalCual()">💾 Guardar tal cual</button>
+            <button class="submit" onclick="convertirNuevo()">✨ Convertir al formato nuevo (407/2026)</button>
+          </div>
+        </div>
       </div>
 
       <!-- Panel: historial de recibos -->
@@ -172,12 +181,50 @@
       if(ok){document.getElementById('periodo').value='';document.getElementById('remunerativo').value='';}
     }
 
-    function subirRecibo(){
+    // 📎 Elegir recibo → la app lo LEE (OCR) y muestra los datos
+    function elegirArchivo(){
       const cuil=document.getElementById('scuil').value.trim();
-      const periodo=document.getElementById('speriodo').value.trim();
-      if(!cuil||!periodo){notify('Completá CUIL y período');return;}
-      notify('Eligiendo archivo…');
-      AndroidBridge.subirRecibo(cuil,periodo);
+      if(!cuil){notify('Completá el CUIL del contratista');return;}
+      notify('📎 Elegí el archivo y lo leemos…');
+      AndroidBridge.leerRecibo();
+    }
+
+    // Datos leídos por el OCR (llegan desde Android)
+    function reciboLeido(datosJson){
+      let datos={};
+      try{datos=JSON.parse(datosJson);}catch(e){}
+      const div=document.getElementById('ocr-datos');
+      let html='';
+      html+='📅 Período: <b>'+(datos.periodo||'—')+'</b><br>';
+      html+='👤 CUIL: <b>'+(datos.cuil||'—')+'</b><br>';
+      html+='💰 Remunerativo: <b>$'+(datos.remunerativo!=null?fmtNum(datos.remunerativo):'—')+'</b><br>';
+      html+='📈 No remunerativo: <b>$'+(datos.no_remunerativo!=null?fmtNum(datos.no_remunerativo):'—')+'</b><br>';
+      html+='📉 Deducciones: <b>$'+(datos.deducciones_total!=null?fmtNum(datos.deducciones_total):'—')+'</b><br>';
+      html+='✅ Neto: <b>$'+(datos.neto!=null?fmtNum(datos.neto):'—')+'</b><br>';
+      html+='🍇 Concepto: <b>'+(datos.concepto||'—')+'</b>';
+      div.innerHTML=html;
+      document.getElementById('ocr-resultado').style.display='block';
+      notify('✅ Recibo leído. Elegí qué hacer.');
+    }
+    function fmtNum(n){return n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+    // 💾 Guardar el recibo tal cual
+    function guardarTalCual(){
+      const cuil=document.getElementById('scuil').value.trim();
+      const periodo=document.getElementById('speriodo').value.trim()||document.getElementById('ocr-periodo').textContent;
+      notify('Guardando recibo…');
+      const ok=AndroidBridge.guardarReciboTalCual(cuil,periodo);
+      notify(ok?'✅ Recibo guardado tal cual!':'❌ Error al guardar');
+      if(ok){document.getElementById('ocr-resultado').style.display='none';document.getElementById('scuil').value='';document.getElementById('speriodo').value='';}
+    }
+
+    // ✨ Convertir al formato nuevo (407/2026)
+    function convertirNuevo(){
+      const cuil=document.getElementById('scuil').value.trim();
+      notify('Convirtiendo al formato nuevo…');
+      const ok=AndroidBridge.convertirRecibo(cuil);
+      notify(ok?'✅ Recibo convertido al formato nuevo!':'❌ No se pudo convertir');
+      if(ok){document.getElementById('ocr-resultado').style.display='none';document.getElementById('scuil').value='';document.getElementById('speriodo').value='';}
     }
 
     function verHistorial(){

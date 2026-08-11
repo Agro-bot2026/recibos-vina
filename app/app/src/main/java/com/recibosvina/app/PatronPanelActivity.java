@@ -28,6 +28,10 @@ public class PatronPanelActivity extends WebViewBase {
     private ValueCallback<Uri[]> filePathCallback;
     private String pendingCuil = "";
     private String pendingPeriodo = "";
+    private String ultimoBase64 = null;
+    private String ultimoNombre = "recibo";
+    private String ultimoPeriodo = "";
+    private org.json.JSONObject ultimosDatos = null;
 
     @Override
     protected int getLayoutId() { return R.layout.activity_web; }
@@ -116,17 +120,100 @@ public class PatronPanelActivity extends WebViewBase {
             return resultado[0];
         }
 
-        /** 📎 Subir recibo: abre el selector de archivo y lo envía al backend */
+        /** 📎 Elegir recibo: abre el selector, hace OCR y devuelve los datos */
         @JavascriptInterface
-        public void subirRecibo(String cuil, String periodo) {
-            pendingCuil = cuil;
-            pendingPeriodo = periodo;
+        public String leerRecibo() {
             runOnUiThread(() -> {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("*/*");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 startActivityForResult(Intent.createChooser(intent, "Elegí el recibo (foto o PDF)"), PICK_RECIBO);
             });
+            // El resultado llega por onActivityResult → procesarReciboElegido()
+            return "{\"ok\":true,\"elegido\":true}";
+        }
+
+        /** 💾 Guardar el recibo tal cual (el archivo ya quedó en memoria) */
+        @JavascriptInterface
+        public boolean guardarReciboTalCual(String cuil, String periodo) {
+            final boolean[] resultado = {false};
+            if (ultimoBase64 == null) return false;
+            final String b64 = ultimoBase64;
+            final String per = periodo != null && !periodo.isEmpty() ? periodo : ultimoPeriodo;
+            Thread t = new Thread(() -> {
+                try {
+                    JSONObject body = new JSONObject();
+                    body.put("patron_id", getPatronId());
+                    body.put("contratista_cuil", cuil);
+                    body.put("periodo", per);
+                    body.put("archivo_base64", b64);
+                    URL url = new URL(MainActivity.API_URL + "/api/patron/subir_recibo");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setDoOutput(true);
+                    OutputStream os = conn.getOutputStream();
+                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
+                    os.close();
+                    int code = conn.getResponseCode();
+                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
+                    StringBuilder sb = new StringBuilder();
+                    int c;
+                    while ((c = is.read()) != -1) sb.append((char) c);
+                    JSONObject resp = new JSONObject(sb.toString());
+                    conn.disconnect();
+                    resultado[0] = resp.optBoolean("ok");
+                } catch (Exception e) {
+                    runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                }
+            });
+            t.start();
+            try { t.join(20000); } catch (InterruptedException e) {}
+            return resultado[0];
+        }
+
+        /** ✨ Convertir al formato nuevo: usa los datos leídos del recibo viejo */
+        @JavascriptInterface
+        public boolean convertirRecibo(String cuil) {
+            final boolean[] resultado = {false};
+            if (ultimosDatos == null) return false;
+            Thread t = new Thread(() -> {
+                try {
+                    JSONObject body = new JSONObject();
+                    body.put("patron_id", getPatronId());
+                    body.put("contratista_cuil", cuil);
+                    body.put("periodo", ultimosDatos.optString("periodo", ultimoPeriodo));
+                    body.put("concepto", ultimosDatos.optString("concepto", "HAS EN PRODUCCIÓN"));
+                    double rem = ultimosDatos.optDouble("remunerativo", 0);
+                    double noRem = ultimosDatos.optDouble("no_remunerativo", 0);
+                    body.put("remunerativo", rem);
+                    body.put("no_remunerativo", noRem);
+                    URL url = new URL(MainActivity.API_URL + "/api/patron/generar_recibo");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setDoOutput(true);
+                    OutputStream os = conn.getOutputStream();
+                    os.write(body.toString().getBytes(StandardCharsets.UTF_8));
+                    os.close();
+                    int code = conn.getResponseCode();
+                    InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
+                    StringBuilder sb = new StringBuilder();
+                    int c;
+                    while ((c = is.read()) != -1) sb.append((char) c);
+                    JSONObject resp = new JSONObject(sb.toString());
+                    conn.disconnect();
+                    resultado[0] = resp.optBoolean("ok");
+                    if (resultado[0]) {
+                        runOnUiThread(() -> AdHelper.showInterstitial(PatronPanelActivity.this, () -> {}));
+                    }
+                } catch (Exception e) {
+                    runOnUiThread(() -> Toast.makeText(PatronPanelActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                }
+            });
+            t.start();
+            try { t.join(25000); } catch (InterruptedException e) {}
+            return resultado[0];
         }
 
         /** 📋 Historial de recibos del patrón */
@@ -169,47 +256,59 @@ public class PatronPanelActivity extends WebViewBase {
                 byte[] bytes = new byte[is.available()];
                 is.read(bytes);
                 is.close();
-                String b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
-                subirAlBackend(b64);
+                ultimoBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+                ultimoNombre = getFileName(uri);
+                // Llamar al OCR del backend
+                new Thread(() -> {
+                    try {
+                        JSONObject body = new JSONObject();
+                        body.put("archivo_base64", ultimoBase64);
+                        body.put("nombre_archivo", ultimoNombre);
+                        URL url = new URL(MainActivity.API_URL + "/api/patron/leer_recibo");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setDoOutput(true);
+                        OutputStream os = conn.getOutputStream();
+                        os.write(body.toString().getBytes(StandardCharsets.UTF_8));
+                        os.close();
+                        int code = conn.getResponseCode();
+                        InputStream is2 = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
+                        StringBuilder sb = new StringBuilder();
+                        int c;
+                        while ((c = is2.read()) != -1) sb.append((char) c);
+                        JSONObject resp = new JSONObject(sb.toString());
+                        conn.disconnect();
+                        if (resp.optBoolean("ok")) {
+                            ultimosDatos = resp.optJSONObject("datos");
+                            if (ultimosDatos == null) ultimosDatos = new JSONObject();
+                            // Enviar los datos al JS
+                            runOnUiThread(() -> {
+                                String json = ultimosDatos.toString().replace("'", "\\'");
+                                webView.evaluateJavascript("reciboLeido('" + json + "')", null);
+                            });
+                        } else {
+                            runOnUiThread(() -> Toast.makeText(this, "No pude leer: " + resp.optString("error"), Toast.LENGTH_LONG).show());
+                        }
+                    } catch (Exception e) {
+                        runOnUiThread(() -> Toast.makeText(this, "Error OCR: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    }
+                }).start();
             } catch (Exception e) {
                 Toast.makeText(this, "Error leyendo archivo: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
     }
 
-    private void subirAlBackend(String b64) {
-        new Thread(() -> {
-            try {
-                JSONObject body = new JSONObject();
-                body.put("patron_id", getPatronId());
-                body.put("contratista_cuil", pendingCuil);
-                body.put("periodo", pendingPeriodo);
-                body.put("archivo_base64", b64);
-                URL url = new URL(MainActivity.API_URL + "/api/patron/subir_recibo");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setDoOutput(true);
-                OutputStream os = conn.getOutputStream();
-                os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-                os.close();
-                int code = conn.getResponseCode();
-                InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-                StringBuilder sb = new StringBuilder();
-                int c;
-                while ((c = is.read()) != -1) sb.append((char) c);
-                JSONObject resp = new JSONObject(sb.toString());
-                conn.disconnect();
-                runOnUiThread(() -> {
-                    if (resp.optBoolean("ok")) {
-                        Toast.makeText(this, "✅ Recibo subido!", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "❌ " + resp.optString("error"), Toast.LENGTH_LONG).show();
-                    }
-                });
-            } catch (Exception e) {
-                runOnUiThread(() -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+    private String getFileName(Uri uri) {
+        String name = "recibo";
+        try {
+            android.database.Cursor cur = getContentResolver().query(uri, null, null, null, null);
+            if (cur != null && cur.moveToFirst()) {
+                int idx = cur.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (idx >= 0) name = cur.getString(idx);
+                cur.close();
             }
-        }).start();
+        } catch (Exception e) {}
+        return name;
     }
-}

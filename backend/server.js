@@ -329,6 +329,103 @@ app.post('/api/ayuda', (req, res) => {
     reqApi.end();
 });
 
+// ─── Patrón: LEER recibo viejo (OCR) y devolver datos para convertir ───
+const { execSync } = require('child_process');
+const TMP_OCR = '/tmp/recibos-ocr';
+
+app.post('/api/patron/leer_recibo', (req, res) => {
+    const { archivo_base64, nombre_archivo } = req.body || {};
+    if (!archivo_base64) return res.status(400).json({ ok: false, error: 'Falta el archivo' });
+
+    fs.mkdirSync(TMP_OCR, { recursive: true });
+    const ext = (nombre_archivo || 'recibo.png').includes('.') ? nombre_archivo.split('.').pop().toLowerCase() : 'png';
+    const inPath = path.join(TMP_OCR, `in_${Date.now()}.${ext}`);
+    const outBase = inPath.replace(/\.[^.]+$/, '');
+
+    try {
+        fs.writeFileSync(inPath, Buffer.from(archivo_base64, 'base64'));
+
+        // Si es PDF, convertirlo a PNG (página 1)
+        let imgPath = inPath;
+        if (ext === 'pdf' || ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'webp') {
+            if (ext === 'pdf') {
+                try {
+                    execSync(`pdftoppm -png -r 200 -f 1 -l 1 "${inPath}" "${outBase}"`, { timeout: 30000 });
+                    const png = `${outBase}-1.png`;
+                    if (fs.existsSync(png)) imgPath = png;
+                } catch (e) { /* seguir con el pdf directo */ }
+            }
+        }
+
+        // OCR con tesseract (español)
+        const texto = execSync(`tesseract "${imgPath}" stdout -l spa --psm 6 2>/dev/null`, { timeout: 60000, encoding: 'utf-8' });
+
+        // Extraer datos clave con regex
+        const datos = extraerDatosRecibo(texto);
+
+        res.json({ ok: true, texto, datos });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: 'No pude leer el archivo: ' + e.message });
+    } finally {
+        try { fs.unlinkSync(inPath); } catch (e) {}
+    }
+});
+
+// Extrae datos de un recibo de sueldo (contratista de viñas)
+function extraerDatosRecibo(texto) {
+    const t = texto.replace(/\r/g, '');
+    const datos = {};
+
+    // Período: ENERO 2026, FEBRERO 2026...
+    const mPeriodo = t.match(/(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\s+20\d{2}/i);
+    if (mPeriodo) datos.periodo = mPeriodo[0].toUpperCase();
+
+    // CUIL del CONTRATISTA: el que está cerca de "Contratista:" o después de la línea del contratista
+    const mCuilContratista = t.match(/Contratista:\s*[^\n]*?\b(20[- ]?\d{8}[- ]?\d)\b/i)
+        || t.match(/Contratista:.*?CUIL:\s*(20[- ]?\d{8}[- ]?\d)/is)
+        || t.match(/(?:Contratista|CONTRATISTA)[\s\S]{0,120}?\b(20[- ]?\d{8}[- ]?\d)\b/i);
+    if (mCuilContratista) {
+        const c = mCuilContratista[1] || mCuilContratista[0];
+        datos.cuil = c.replace(/\s+/g, '');
+    }
+    if (!datos.cuil) {
+        // fallback: el último CUIL del documento (el del contratista suele ir después del empleador)
+        const cuiles = t.match(/\b20[- ]?\d{8}[- ]?\d\b/g);
+        if (cuiles && cuiles.length) datos.cuil = cuiles[cuiles.length - 1].replace(/\s+/g, '');
+    }
+
+    // Remunerativo: buscar valor con formato de dinero (miles con puntos y/o decimales)
+    const mRem = t.match(/(?:REM\.?\s*C\/D|REMUNERATIVO|REM\.?\s*C\/D\.?|SUELDO BRUTO)[:\s]*\$?\s*([\d][\d.,]*)/i);
+    if (mRem) datos.remunerativo = parseNumero(mRem[1]);
+
+    // No remunerativo
+    const mNoRem = t.match(/(?:REM\.?\s*S\/D|NO REMUNERATIVO|REM\.?\s*S\/D\.?)[:\s]*\$?\s*([\d][\d.,]*)/i);
+    if (mNoRem) datos.no_remunerativo = parseNumero(mNoRem[1]);
+
+    // Deducciones total: buscar "TOTAL DEDUCCIONES" o la fila de totales con formato dinero
+    const mDed = t.match(/(?:TOTAL\s*DEDUCCIONES|DEDUCCIONES|DEDUCC\.?)[:\s]*\$?\s*([\d][\d.,]*)/i);
+    if (mDed && mDed[1].includes(',')) datos.deducciones_total = parseNumero(mDed[1]);
+
+    // Neto: buscar "SUELDO NETO" seguido de valor con formato dinero (con puntos de miles)
+    const mNeto = t.match(/(?:SUELDO\s*NETO|NETO|TOTAL\s*NETO)[:\s]*\$?\s*([\d][\d.,]*)/i);
+    if (mNeto && mNeto[1].includes(',')) datos.neto = parseNumero(mNeto[1]);
+
+    // Concepto (hectáreas)
+    const mHas = t.match(/(\d+(?:\.\d+)?)\s*HAS?(?:\s+EN\s+PRODUCCI[OÓ]N)?/i);
+    if (mHas && !mHas[1].includes('.')) datos.concepto = `${mHas[1]} HAS EN PRODUCCIÓN`;
+
+    return datos;
+}
+
+function parseNumero(s) {
+    // "1.463.512,05" → 1463512.05 ; "1463512.05" → 1463512.05
+    const limpio = s.replace(/\$/g, '').replace(/\s/g, '');
+    if (limpio.includes(',')) {
+        return parseFloat(limpio.replace(/\./g, '').replace(',', '.'));
+    }
+    return parseFloat(limpio);
+}
+
 // ─── Health ───
 app.get('/api/health', (req, res) => res.json({ ok: true, app: 'Recibos Viña', version: '0.1.0' }));
 
