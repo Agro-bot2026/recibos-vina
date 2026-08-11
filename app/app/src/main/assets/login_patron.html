@@ -61,16 +61,46 @@
         <button class="submit" type="submit">Registrarme</button>
       </form>
       <p class="help">¿Ya tenés una cuenta? <a href="#" id="help-link">Ingresar aquí</a> · <a href="#" id="privacy-link">Privacidad</a></p>
-      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Versión 1.0</span></footer>
-    </section>
+      <footer class="footer"><span>ViñaRecibos</span><span class="dot">•</span><span>Versión 1.0</span></footer>    </section>
   </main>
   <div class="toast" role="status" aria-live="polite"></div>
   <script>
     const card=document.querySelector('.card'),shell=document.querySelector('.shell'),toast=document.querySelector('.toast'); let timer;
     function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2800)}
     if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){shell.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;card.style.setProperty('--ry',(x*5)+'deg');card.style.setProperty('--rx',(y*-5)+'deg')});shell.addEventListener('pointerleave',()=>{card.style.setProperty('--ry','0deg');card.style.setProperty('--rx','0deg')})}
-    document.getElementById('login-form').addEventListener('submit',e=>{e.preventDefault();const nombre=document.getElementById('nombre').value.trim();const vinedo=document.getElementById('vinedo').value.trim();if(!nombre||!vinedo){notify('Completá tu nombre y número de viñedo');return;}notify('Creando tu cuenta de patrón…');const ok=AndroidBridge.registrarPatron(nombre,vinedo);if(!ok)notify('Error al registrar. Verificá los datos.');});
-    document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();notify('Redirigiendo al acceso de patrones…')});
+    // Cambiar entre REGISTRARSE e INGRESAR
+    let modo='registrar';
+    document.getElementById('login-form').addEventListener('submit',e=>{
+      e.preventDefault();
+      const nombre=document.getElementById('nombre').value.trim();
+      const vinedo=document.getElementById('vinedo').value.trim();
+      if(!nombre||!vinedo){notify('Completá tu nombre y número de viñedo');return;}
+      if(modo==='registrar'){
+        notify('Creando tu cuenta de patrón…');
+        const ok=AndroidBridge.registrarPatron(nombre,vinedo);
+        if(!ok)notify('Error al registrar. Verificá los datos.');
+      } else {
+        notify('Verificando tus datos…');
+        const ok=AndroidBridge.loginPatron(nombre,vinedo);
+        if(!ok)notify('No se encontró tu cuenta. Verificá viñedo y nombre.');
+      }
+    });
+    document.getElementById('help-link').addEventListener('click',e=>{
+      e.preventDefault();
+      if(modo==='registrar'){
+        modo='ingresar';
+        document.querySelector('.submit').textContent='Ingresar al sistema';
+        document.querySelector('.brand h1').innerHTML='Ingresar como <span>Patrón</span>';
+        document.querySelector('.subtitle').textContent='Entrá con tu nombre y el número de viñedo de tu cuenta.';
+        document.getElementById('help-link').textContent='Registrarme';
+      } else {
+        modo='registrar';
+        document.querySelector('.submit').textContent='Registrarme';
+        document.querySelector('.brand h1').innerHTML='Registro de <span>Patrón</span>';
+        document.querySelector('.subtitle').textContent='Registrate con tu nombre y el número de viñedo para administrar tus recibos digitales.';
+        document.getElementById('help-link').textContent='Ingresar aquí';
+      }
+    });
     document.getElementById('privacy-link').addEventListener('click',e=>{e.preventDefault();AndroidBridge.openPrivacy()});
   </script>
 </body>

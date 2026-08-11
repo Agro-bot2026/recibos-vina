@@ -45,6 +45,13 @@
     .submit::after { content:''; position:absolute; inset:0 auto 0 -75%; width:42%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent); }
     .submit:hover { transform:translateY(-2px); filter:brightness(1.1); } .submit:hover::after { animation:shimmer .8s ease forwards; }
     .hint { margin-top:14px; color:var(--muted); font-size:12px; line-height:1.55; text-align:center; }
+    .list { display:grid; gap:10px; max-height:320px; overflow-y:auto; }
+    .list-item { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:13px 15px; border:1px solid var(--line); border-radius:15px; background:rgba(255,255,255,.045); font-size:12.5px; }
+    .list-item .periodo { font-weight:700; }
+    .list-item .meta { color:var(--muted); font-size:11px; }
+    .badge { padding:4px 10px; border-radius:999px; font-size:10.5px; font-weight:700; }
+    .badge-ok { color:#a7f5d5; background:rgba(93,225,178,.14); border:1px solid rgba(93,225,178,.25); }
+    .badge-wait { color:#ffd9a0; background:rgba(255,178,92,.12); border:1px solid rgba(255,178,92,.25); }
     .footer { display:flex; justify-content:center; gap:9px; margin-top:21px; color:#71869f; font-size:11px; } .footer .dot { color:var(--blue); }
     .toast { position:fixed; left:50%; bottom:22px; z-index:10; padding:12px 17px; border:1px solid rgba(91,169,255,.3); border-radius:12px; color:var(--text); background:#10243b; box-shadow:0 20px 50px rgba(0,0,0,.4); font-size:13px; transform:translate(-50%,140%); transition:transform .3s; } .toast.show { transform:translate(-50%,0); }
     @media(max-width:420px){ .card{padding:24px 19px 21px;border-radius:25px}.topbar{margin-bottom:23px}.status{padding:6px 8px;font-size:10px} input{height:55px} }
@@ -65,6 +72,8 @@
       <div class="actions" id="menu">
         <button class="action action-register" type="button" data-panel="registrar"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><span class="action-copy"><span class="action-label">Registrar contratista</span><span class="action-hint">Dale acceso a un trabajador con su CUIL</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
         <button class="action action-generate" type="button" data-panel="generar"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg></span><span class="action-copy"><span class="action-label">Generar recibo</span><span class="action-hint">Creá el recibo en formato nuevo (Dto. 407/2026)</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="action action-upload" type="button" data-panel="subir"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span><span class="action-copy"><span class="action-label">Subir recibo</span><span class="action-hint">Subí una foto o PDF de un recibo existente</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="action action-list" type="button" data-panel="historial"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><span class="action-copy"><span class="action-label">Mis recibos</span><span class="action-hint">Historial de todo lo que cargaste</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
         <button class="action action-privacy" type="button" data-panel="privacidad"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="action-copy"><span class="action-label">Política de privacidad</span><span class="action-hint">Conocé cómo protegemos tus datos</span></span><svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
       </div>
 
@@ -89,6 +98,24 @@
         <p class="hint">💡 El recibo sale en formato nuevo (Decreto 407/2026): 4 secciones + gráfico de costos. El contratista lo firma desde su teléfono.</p>
       </div>
 
+      <!-- Panel: subir recibo -->
+      <div class="panel" id="panel-subir">
+        <button class="panel-back" onclick="showMenu()">← Volver al menú</button>
+        <h2 class="panel-title">Subir recibo</h2>
+        <div class="field"><label class="field-label" for="scuil">CUIL del contratista</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h2M15 10h3M14 15h4"/></svg><input id="scuil" type="text" inputmode="numeric" placeholder="Ej: 20-XXXXXXXX-X"></div></div>
+        <div class="field"><label class="field-label" for="speriodo">Período</label><div class="input-wrap"><svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg><input id="speriodo" type="text" placeholder="Ej: MARZO 2026"></div></div>
+        <button class="submit" onclick="subirRecibo()">📎 Elegir archivo y subir</button>
+        <p class="hint">📸 Podés subir una foto o un PDF del recibo. Queda registrado para que el contratista lo vea y firme.</p>
+      </div>
+
+      <!-- Panel: historial de recibos -->
+      <div class="panel" id="panel-historial">
+        <button class="panel-back" onclick="showMenu()">← Volver al menú</button>
+        <h2 class="panel-title">Mis recibos</h2>
+        <div class="list" id="listaHistorial"></div>
+        <p class="hint" id="historialVacio" style="display:none">Todavía no cargaste recibos.</p>
+      </div>
+
       <!-- Panel: privacidad (cargado desde privacidad.html) -->
       <div class="panel" id="panel-privacidad">
         <button class="panel-back" onclick="showMenu()">← Volver al menú</button>
@@ -110,6 +137,8 @@
       const p=btn.dataset.panel;
       if(p==='registrar')showPanel('panel-registrar');
       else if(p==='generar')showPanel('panel-generar');
+      else if(p==='subir')showPanel('panel-subir');
+      else if(p==='historial'){ showPanel('panel-historial'); verHistorial(); }
       else { showPanel('panel-privacidad'); cargarPrivacidad(); }
     }));
 
@@ -141,6 +170,30 @@
       const ok=AndroidBridge.generarRecibo(cuil,periodo,concepto,rem);
       notify(ok?'✅ Recibo generado!':'❌ Error generando recibo');
       if(ok){document.getElementById('periodo').value='';document.getElementById('remunerativo').value='';}
+    }
+
+    function subirRecibo(){
+      const cuil=document.getElementById('scuil').value.trim();
+      const periodo=document.getElementById('speriodo').value.trim();
+      if(!cuil||!periodo){notify('Completá CUIL y período');return;}
+      notify('Eligiendo archivo…');
+      AndroidBridge.subirRecibo(cuil,periodo);
+    }
+
+    function verHistorial(){
+      const recibos=AndroidBridge.verRecibosPatron();
+      const lista=document.getElementById('listaHistorial');
+      const vacio=document.getElementById('historialVacio');
+      lista.innerHTML='';
+      if(!recibos||recibos.length===0){vacio.style.display='block';return;}
+      vacio.style.display='none';
+      recibos.forEach(r=>{
+        const div=document.createElement('div');
+        div.className='list-item';
+        const badge=r.firmado===1?'<span class="badge badge-ok">✅ Firmado</span>':'<span class="badge badge-wait">⏳ Sin firmar</span>';
+        div.innerHTML='<div><div class="periodo">'+r.periodo+'</div><div class="meta">'+r.contratista+'</div></div>'+badge;
+        lista.appendChild(div);
+      });
     }
   </script>
 </body>

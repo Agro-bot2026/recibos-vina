@@ -62,6 +62,56 @@ app.post('/api/patron/registrar', (req, res) => {
         });
 });
 
+// ─── Patrón: LOGIN (volver a entrar sin re-registrar) ───
+app.post('/api/patron/login', (req, res) => {
+    const { nombre, numero_viniedo } = req.body || {};
+    if (!nombre || !numero_viniedo) {
+        return res.status(400).json({ ok: false, error: 'Faltan nombre y número de viñedo' });
+    }
+    db.get('SELECT id, nombre, numero_viniedo FROM patrones WHERE numero_viniedo=?', [numero_viniedo], (e, p) => {
+        if (!p) return res.status(404).json({ ok: false, error: 'No hay un patrón registrado con ese número de viñedo' });
+        if (!nombresCoinciden(p.nombre, nombre)) {
+            return res.status(403).json({ ok: false, error: 'El nombre no coincide con el viñedo. Verificá.' });
+        }
+        res.json({ ok: true, patron_id: p.id, nombre: p.nombre });
+    });
+});
+
+// ─── Patrón: LISTAR sus recibos (historial) ───
+app.get('/api/patron/recibos', (req, res) => {
+    const { patron_id } = req.query;
+    if (!patron_id) return res.status(400).json({ ok: false, error: 'Falta patron_id' });
+    db.all(`SELECT r.id, r.periodo, r.firmado, r.firma_fecha, r.created_at, c.nombre AS contratista, c.cuil
+            FROM recibos r JOIN contratistas c ON c.id = r.contratista_id
+            WHERE r.patron_id=? ORDER BY r.created_at DESC`, [patron_id], (e, recibos) => {
+        res.json({ ok: true, recibos: recibos || [] });
+    });
+});
+
+// ─── Patrón: SUBIR recibo (foto/PDF existente) ───
+app.post('/api/patron/subir_recibo', (req, res) => {
+    const { patron_id, contratista_cuil, periodo, archivo_base64, nombre_archivo } = req.body || {};
+    if (!patron_id || !contratista_cuil || !periodo || !archivo_base64) {
+        return res.status(400).json({ ok: false, error: 'Faltan datos' });
+    }
+    db.get('SELECT id FROM contratistas WHERE cuil=? AND patron_id=?', [contratista_cuil, patron_id], (e, c) => {
+        if (!c) return res.status(404).json({ ok: false, error: 'Contratista no encontrado para este patrón' });
+        try {
+            const fname = `${contratista_cuil}_${periodo.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+            const fpath = path.join(RECIBOS_DIR, fname);
+            fs.writeFileSync(fpath, Buffer.from(archivo_base64, 'base64'));
+            db.run('INSERT INTO recibos (patron_id, contratista_id, periodo, archivo_path) VALUES (?,?,?,?)',
+                [patron_id, c.id, periodo, fpath],
+                function (err) {
+                    if (err) return res.status(500).json({ ok: false, error: err.message });
+                    res.json({ ok: true, recibo_id: this.lastID });
+                });
+        } catch (err) {
+            res.status(500).json({ ok: false, error: 'Error guardando archivo: ' + err.message });
+        }
+    });
+});
+
 // ─── Patrón: registrar contratista ───
 app.post('/api/patron/contratista', (req, res) => {
     const { patron_id, cuil, nombre } = req.body || {};
