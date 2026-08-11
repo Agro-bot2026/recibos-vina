@@ -59,5 +59,10 @@ public abstract class WebViewBase extends AppCompatActivity {
         public void openPrivacy() {
             startActivity(new Intent(WebViewBase.this, PrivacyActivity.class));
         }
+
+        @JavascriptInterface
+        public void openHelp() {
+            startActivity(new Intent(WebViewBase.this, HelpActivity.class));
+        }
     }
 }

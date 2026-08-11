@@ -70,7 +70,7 @@
     function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2800)}
     if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){shell.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;card.style.setProperty('--ry',(x*5)+'deg');card.style.setProperty('--rx',(y*-5)+'deg')});shell.addEventListener('pointerleave',()=>{card.style.setProperty('--ry','0deg');card.style.setProperty('--rx','0deg')})}
     document.getElementById('login-form').addEventListener('submit',e=>{e.preventDefault();const cuil=document.getElementById('cuil').value.trim();const nombre=document.getElementById('nombre').value.trim();if(!cuil||!nombre){notify('Completá tu CUIL y nombre');return;}notify('Verificando tus datos de acceso…');const ok=AndroidBridge.loginContratista(cuil,nombre);if(!ok)notify('El nombre no coincide con el CUIL. Verificá.');});
-    document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();notify('Próximamente podrás solicitar ayuda desde aquí')});
+    document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();AndroidBridge.openHelp()});
     document.getElementById('privacy-link').addEventListener('click',e=>{e.preventDefault();AndroidBridge.openPrivacy()});
   </script>
 </body>

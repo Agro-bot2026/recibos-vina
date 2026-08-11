@@ -17,9 +17,18 @@ const sqlite3 = require('sqlite3');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const https = require('https');
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
+// CORS para el WebView de la app (el fetch del chat lo necesita)
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+});
 
 const DB_PATH = '/opt/recibos-vina/recibos.db';
 const FIRMAS_DIR = '/opt/recibos-vina/firmas';
@@ -193,6 +202,81 @@ app.post('/api/contratista/firmar', (req, res) => {
                 res.json({ ok: true, mensaje: 'Recibo firmado!', firma_path: c.firma_path });
             });
     });
+});
+
+// ─── Centro de ayuda inteligente (DeepSeek) ───
+// La key vive en /etc/ghost-license/deepseek.key (solo root, nunca en la app)
+const DEEPSEEK_KEY_PATH = '/etc/ghost-license/deepseek.key';
+
+const AYUDA_CONTEXTO = [
+    'Sos el asistente de ayuda de ViñaRecibos, una app de recibos de sueldo para contratistas de viñas y frutales de Mendoza, Argentina (ley 23.154).',
+    'Respondé en español rioplatense, corto y claro, con pasos numerados si hace falta.',
+    '',
+    'Datos útiles que conocés:',
+    '- Pantalla principal: botones "Soy patrón" y "Soy contratista", más "Ingresar con huella".',
+    '- El contratista entra con CUIL + nombre (los registró su patrón) desde "Soy contratista".',
+    '- La firma se sube UNA vez tocando "Subir mi firma" en el panel del contratista (foto de la firma en papel).',
+    '- Los recibos se ven tocando "Ver mis recibos" en el panel del contratista.',
+    '- El recibo se firma tocando el botón "Firmar" en la lista de recibos.',
+    '- El patrón registra contratistas y genera recibos desde su panel ("Registrar contratista" y "Generar recibo").',
+    '- Los recibos se generan en formato nuevo (Decreto 407/2026): 4 secciones + gráfico de costos.',
+    '- La app es gratuita y se financia con anuncios de AdMob (intersticiales, recompensados y de apertura).',
+    '- Contacto: info@charly-tricks.dev',
+    '- La huella dactilar entra directo si ya entraste una vez con CUIL+nombre.',
+    '- "El nombre no coincide" = el patrón lo registró con otro nombre (el orden/mayúsculas/tildes no importan).',
+    '- "Error de conexión" = revisar datos móviles/wifi, el servidor puede estar temporalmente caído.',
+    '- NO inventes secciones ni pantallas que no existen (no hay "Mi Perfil" ni "Configuración" en la app).',
+].join('\n');
+
+app.post('/api/ayuda', (req, res) => {
+    const { pregunta } = req.body || {};
+    if (!pregunta || !pregunta.trim()) {
+        return res.status(400).json({ ok: false, error: 'Falta la pregunta' });
+    }
+    let key;
+    try { key = fs.readFileSync(DEEPSEEK_KEY_PATH, 'utf-8').trim(); } catch (e) {}
+    if (!key) {
+        return res.status(500).json({ ok: false, error: 'Asistente no configurado todavía' });
+    }
+
+    const body = JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+            { role: 'system', content: AYUDA_CONTEXTO },
+            { role: 'user', content: pregunta },
+        ],
+        max_tokens: 500,
+        temperature: 0.4,
+    });
+
+    const reqApi = https.request({
+        hostname: 'api.deepseek.com',
+        path: '/chat/completions',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`,
+            'Content-Length': Buffer.byteLength(body),
+        },
+    }, (r) => {
+        let data = '';
+        r.on('data', (c) => data += c);
+        r.on('end', () => {
+            try {
+                const parsed = JSON.parse(data);
+                if (r.statusCode === 200 && parsed.choices && parsed.choices[0]) {
+                    res.json({ ok: true, respuesta: parsed.choices[0].message.content.trim() });
+                } else {
+                    res.status(502).json({ ok: false, error: `DeepSeek ${r.statusCode}: ${parsed.error?.message || 'error'}` });
+                }
+            } catch (e) {
+                res.status(502).json({ ok: false, error: 'Respuesta inválida del asistente' });
+            }
+        });
+    });
+    reqApi.on('error', (e) => res.status(500).json({ ok: false, error: `Error de conexión: ${e.message}` }));
+    reqApi.write(body);
+    reqApi.end();
 });
 
 // ─── Health ───

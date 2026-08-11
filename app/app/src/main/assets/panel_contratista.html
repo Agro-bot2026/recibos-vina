@@ -105,7 +105,7 @@
       if(button.dataset.action==='firma'){ notify('Preparando la carga de tu firma…'); AndroidBridge.subirFirma(); }
       else { notify('Abriendo tus recibos…'); cargarRecibos(); }
     }));
-    document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();notify('El centro de ayuda estará disponible próximamente')});
+    document.getElementById('help-link').addEventListener('click',e=>{e.preventDefault();AndroidBridge.openHelp()});
     document.getElementById('privacy-link').addEventListener('click',e=>{e.preventDefault();AndroidBridge.openPrivacy()});
   </script>
 </body>
