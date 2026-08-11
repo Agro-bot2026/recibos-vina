@@ -312,3 +312,4 @@ public class PatronPanelActivity extends WebViewBase {
         } catch (Exception e) {}
         return name;
     }
+}
