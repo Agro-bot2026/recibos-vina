@@ -24,9 +24,21 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 public class AdHelper {
 
     private static final String TAG = "AdHelper";
-    public static final String AD_UNIT_INTERSTITIAL = "ca-app-pub-4478373683231277/6804747303";
-    public static final String AD_UNIT_REWARDED = "ca-app-pub-4478373683231277/5777892085";
-    public static final String AD_UNIT_APP_OPEN = "ca-app-pub-4478373683231277/2405769075";
+
+    // ─── AD UNITS ───
+    // Real (producción): se activan cuando la app esté publicada en Play Store
+    public static final String AD_UNIT_INTERSTITIAL_REAL = "ca-app-pub-4478373683231277/6804747303";
+    public static final String AD_UNIT_REWARDED_REAL = "ca-app-pub-4478373683231277/5777892085";
+    public static final String AD_UNIT_APP_OPEN_REAL = "ca-app-pub-4478373683231277/2405769075";
+
+    // Test (desarrollo): IDs de prueba oficiales de Google — muestran anuncios de
+    // prueba SIEMPRE, sin necesidad de publicar la app. Al publicar, usar los REAL.
+    public static final String AD_UNIT_INTERSTITIAL = "ca-app-pub-3940256099942544/1033173712";
+    public static final String AD_UNIT_REWARDED = "ca-app-pub-3940256099942544/5224354917";
+    public static final String AD_UNIT_APP_OPEN = "ca-app-pub-3940256099942544/9257395921";
+
+    // ⚡ Cambiar a true cuando la app esté PUBLICADA en Play Store
+    public static final boolean PRODUCTION = false;
 
     private static InterstitialAd interstitial;
     private static RewardedAd rewardedAd;

@@ -20,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
 
     public static final String API_URL = "http://157.250.202.243:8400";
+    private boolean appOpenIntentado = false;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -41,8 +42,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 📢 Anuncio de apertura (App Open) al volver a la app
-        AdHelper.showAppOpen(this);
+        // 📢 Anuncio de apertura (App Open) — con retraso para que alcance a cargar
+        // la primera vez (el anuncio tarda ~2-3s en estar listo)
+        if (!appOpenIntentado) {
+            appOpenIntentado = true;
+            webView.postDelayed(() -> AdHelper.showAppOpen(this), 3000);
+        }
     }
 
     private class Bridge {
@@ -78,6 +83,18 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "✅ Huella OK! Entrando...", Toast.LENGTH_SHORT).show();
                 startActivity(new android.content.Intent(MainActivity.this, ContratistaPanelActivity.class));
             }));
+        }
+
+        /** 📋 Política de privacidad */
+        @JavascriptInterface
+        public void openPrivacy() {
+            startActivity(new android.content.Intent(MainActivity.this, PrivacyActivity.class));
+        }
+
+        /** 🤖 Centro de ayuda */
+        @JavascriptInterface
+        public void openHelp() {
+            startActivity(new android.content.Intent(MainActivity.this, HelpActivity.class));
         }
     }
 
