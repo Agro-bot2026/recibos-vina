@@ -24,11 +24,20 @@
     <article class="privacy-section"><h2>2. Información que recopilamos</h2><p>Recopilamos los datos necesarios para operar la plataforma: <strong>identificación</strong> (nombre, CUIL), <strong>información laboral</strong> (recibos de sueldo en formato vigente según Decreto 407/2026, períodos, remuneraciones, contribuciones y deducciones), <strong>datos del viñedo</strong> (número y ubicación) y una <strong>imagen de tu firma</strong> que subís voluntariamente para estampar en tus recibos.</p></article>
     <article class="privacy-section"><h2>3. Cómo usamos tus datos</h2><p>Utilizamos la información para: validar tu identidad al ingresar, generar y emitir recibos de sueldo <strong>en el formato nuevo (Anexo III · Decreto 407/2026)</strong> con las 4 secciones y el detalle del costo laboral, estampar tu firma digital con fecha y hora, darte acceso a tu historial de recibos y brindar soporte.</p></article>
     <article class="privacy-section"><h2>4. Protección y almacenamiento</h2><p>Aplicamos medidas técnicas y organizativas razonables para proteger los datos contra accesos no autorizados, pérdida, alteración o divulgación indebida. El acceso a los recibos está protegido por <strong>CUIL + nombre</strong>, y podés usar <strong>biometría (huella dactilar)</strong> en tu dispositivo para ingresar de forma segura.</p></article>
-    <article class="privacy-section"><h2>5. Publicidad en la aplicación</h2><p>ViñaRecibos es una <strong>aplicación gratuita</strong> y se financia mediante <strong>anuncios de Google AdMob</strong>. Al usar la app podés ver anuncios (de apertura, intersticiales y recompensados). Google puede recopilar datos de publicidad según sus propias políticas — te recomendamos revisar la <strong>Política de Privacidad de Google</strong> para más información. Algunos anuncios recompensados son opcionales (ej: desbloquear funciones) y nunca son obligatorios para usar la app.</p></article>
+    <article class="privacy-section"><h2>5. Publicidad en la aplicación</h2><p>ViñaRecibos es una <strong>aplicación gratuita</strong> y se financia mediante <strong>anuncios de Google AdMob</strong>. Al usar la app podés ver anuncios (de apertura, intersticiales y recompensados). Google puede recopilar datos de publicidad según sus propias políticas — te recomendamos revisar la <strong>Política de Privacidad de Google</strong> para más información. Algunos anuncios recompensados son opcionales (ej: desbloquear funciones) y nunca son obligatorios para usar la app.</p><p style="margin-top:8px"><a href="#" id="ads-link" style="color:#9bc8ff;text-decoration:none;font-weight:600">ⓘ Gestionar anuncios personalizados</a></p></article>
     <article class="privacy-section"><h2>6. Compartición de información</h2><p>No vendemos tus datos personales. Solo podremos compartir información cuando sea necesario para prestar el servicio (ej: notificaciones), cumplir una obligación legal o proteger la seguridad de la plataforma.</p></article>
     <article class="privacy-section"><h2>7. Tus derechos</h2><p>Podés solicitar acceso, actualización, rectificación o eliminación de tus datos escribiéndonos a <strong>info@charly-tricks.dev</strong>, sujeto a las obligaciones legales y operativas aplicables (Ley 25.326 de Protección de Datos Personales, Argentina).</p></article>
     <article class="privacy-section"><h2>8. Contacto</h2><p>Si tenés preguntas sobre esta política o sobre el tratamiento de tus datos, comunicate con el equipo responsable: <strong>info@charly-tricks.dev</strong>.</p></article>
     <div class="privacy-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01" stroke-linecap="round"/></svg><span>Este contenido es una base informativa y debe ser revisado y ajustado por un profesional legal antes de publicarse como política oficial en Google Play.</span></div>
   </div>
+  <script>
+    var adsLink = document.getElementById('ads-link');
+    if (adsLink) {
+      adsLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.AndroidBridge && AndroidBridge.openAdSettings) AndroidBridge.openAdSettings();
+      });
+    }
+  </script>
 </body>
 </html>

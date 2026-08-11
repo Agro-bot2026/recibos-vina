@@ -98,6 +98,15 @@ public class MainActivity extends AppCompatActivity {
         public void openHelp() {
             startActivity(new android.content.Intent(MainActivity.this, HelpActivity.class));
         }
+
+        /** ⓘ Gestión de anuncios — link a la config de anuncios de Google */
+        @JavascriptInterface
+        public void openAdSettings() {
+            android.content.Intent i = new android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://adssettings.google.com"));
+            try { startActivity(i); } catch (Exception e) {}
+        }
     }
 
     @Override

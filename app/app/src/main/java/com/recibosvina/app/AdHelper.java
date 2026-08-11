@@ -34,6 +34,8 @@ public class AdHelper {
     private static RewardedAd rewardedAd;
     private static com.google.android.gms.ads.appopen.AppOpenAd appOpenAd;
     private static long appOpenLoadTime = 0;
+    private static long lastAppOpenShown = 0;
+    private static final long APP_OPEN_MIN_INTERVAL = 5 * 60 * 1000; // 5 minutos entre app open
 
     public static void init(Context context) {
         MobileAds.initialize(context, initStatus -> Log.d(TAG, "AdMob inicializado"));
@@ -159,6 +161,10 @@ public class AdHelper {
 
     private static void tryShowAppOpen(final Activity activity, final int intento) {
         long now = System.currentTimeMillis();
+        // ⏱️ Política AdMob: máximo 1 app open cada 5 minutos
+        if (now - lastAppOpenShown < APP_OPEN_MIN_INTERVAL) {
+            return;
+        }
         if (appOpenAd == null) {
             // Todavía no cargó — reintentar hasta 5 veces (10s máx)
             if (intento < 5) {
@@ -173,6 +179,7 @@ public class AdHelper {
         }
         final com.google.android.gms.ads.appopen.AppOpenAd ad = appOpenAd;
         appOpenAd = null; // se consume
+        lastAppOpenShown = now; // registrar cuándo se mostró
         ad.setFullScreenContentCallback(new FullScreenContentCallback() {
             @Override
             public void onAdDismissedFullScreenContent() {

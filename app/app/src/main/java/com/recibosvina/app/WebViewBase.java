@@ -64,5 +64,14 @@ public abstract class WebViewBase extends AppCompatActivity {
         public void openHelp() {
             startActivity(new Intent(WebViewBase.this, HelpActivity.class));
         }
+
+        /** ⓘ Gestión de anuncios — link a la config de anuncios de Google (requisito Play) */
+        @JavascriptInterface
+        public void openAdSettings() {
+            android.content.Intent i = new android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://adssettings.google.com"));
+            try { startActivity(i); } catch (Exception e) {}
+        }
     }
 }

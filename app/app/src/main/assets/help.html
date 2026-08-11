@@ -47,6 +47,7 @@
     <button class="chip" data-q="¿Cómo entro como contratista?">📲 Entrar</button>
     <button class="chip" data-q="Me dice que el nombre no coincide">🔑 Nombre no coincide</button>
     <button class="chip" data-q="¿Por qué veo anuncios?">📢 Anuncios</button>
+    <button class="chip" id="ads-chip">ⓘ Gestionar anuncios</button>
   </div>
 
   <div class="chat-input">
@@ -93,9 +94,13 @@
       .finally(()=>{escribiendo=false;sendBtn.disabled=false;});
     }
 
-    document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+    document.querySelectorAll('.chip:not(#ads-chip)').forEach(c=>c.addEventListener('click',()=>{
       input.value=c.dataset.q; enviar();
     }));
+    // ⓘ Gestión de anuncios — abre la config de anuncios de Google
+    document.getElementById('ads-chip').addEventListener('click',()=>{
+      if(window.AndroidBridge&&AndroidBridge.openAdSettings)AndroidBridge.openAdSettings();
+    });
     input.addEventListener('keydown',e=>{if(e.key==='Enter')enviar();});
   </script>
 </body>
