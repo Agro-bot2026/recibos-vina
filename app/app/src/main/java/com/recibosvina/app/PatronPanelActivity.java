@@ -172,22 +172,22 @@ public class PatronPanelActivity extends WebViewBase {
             return resultado[0];
         }
 
-        /** ✨ Convertir al formato nuevo: usa los datos leídos del recibo viejo */
+        /** ✨ Convertir al formato nuevo: usa los datos (corregidos) del recibo viejo */
         @JavascriptInterface
-        public boolean convertirRecibo(String cuil) {
+        public boolean convertirRecibo(String cuil, String periodo, String rem, String norem, String concepto) {
             final boolean[] resultado = {false};
-            if (ultimosDatos == null) return false;
             Thread t = new Thread(() -> {
                 try {
                     JSONObject body = new JSONObject();
                     body.put("patron_id", getPatronId());
                     body.put("contratista_cuil", cuil);
-                    body.put("periodo", ultimosDatos.optString("periodo", ultimoPeriodo));
-                    body.put("concepto", ultimosDatos.optString("concepto", "HAS EN PRODUCCIÓN"));
-                    double rem = ultimosDatos.optDouble("remunerativo", 0);
-                    double noRem = ultimosDatos.optDouble("no_remunerativo", 0);
-                    body.put("remunerativo", rem);
-                    body.put("no_remunerativo", noRem);
+                    body.put("periodo", periodo);
+                    body.put("concepto", concepto.isEmpty() ? "HAS EN PRODUCCIÓN" : concepto);
+                    double r = 0, nr = 0;
+                    try { r = Double.parseDouble(rem.replace(".", "").replace(",", ".")); } catch (Exception e) {}
+                    try { nr = Double.parseDouble(norem.replace(".", "").replace(",", ".")); } catch (Exception e) {}
+                    body.put("remunerativo", r);
+                    body.put("no_remunerativo", nr);
                     URL url = new URL(MainActivity.API_URL + "/api/patron/generar_recibo");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");

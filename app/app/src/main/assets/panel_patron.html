@@ -106,14 +106,23 @@
         <button class="submit" onclick="elegirArchivo()">📎 Elegir recibo (foto/PDF)</button>
         <p class="hint">📸 Subí la foto o PDF del recibo. La app lo LEE y te avisa qué datos encontró.</p>
 
-        <!-- Resultado del OCR -->
-        <div id="ocr-resultado" style="display:none;margin-top:10px;padding:14px;border:1px solid rgba(93,225,178,.3);border-radius:15px;background:rgba(93,225,178,.07)">
-          <div style="font-size:13px;font-weight:700;color:#a7f5d5;margin-bottom:8px">🔍 Datos leídos del recibo:</div>
-          <div id="ocr-datos" style="font-size:12px;color:#dcecff;line-height:1.7"></div>
-          <div style="display:grid;gap:9px;margin-top:12px">
+        <!-- Resultado del OCR: se muestra en una VENTANA aparte (overlay a pantalla completa) -->
+        <div id="ocr-ventana" style="display:none;position:fixed;inset:0;z-index:100;overflow-y:auto;background:linear-gradient(145deg,#08182b 0%,var(--bg) 54%,#081321 100%);padding:22px 18px">
+          <button style="background:none;border:0;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;margin-bottom:10px" onclick="cerrarVentana()">← Volver</button>
+          <h2 class="panel-title" style="font-size:18px;margin-bottom:6px">🔍 Datos leídos del recibo</h2>
+          <p style="color:var(--muted);font-size:12px;margin:0 0 14px">La app leyó tu recibo. <b style="color:#a7f5d5">Corregí lo que haga falta</b> y elegí qué hacer.</p>
+          <div style="display:grid;gap:10px">
+            <div><label class="field-label" for="ocr-periodo">Período</label><input id="ocr-periodo" type="text" style="padding-left:14px"></div>
+            <div><label class="field-label" for="ocr-rem">Remunerativo ($)</label><input id="ocr-rem" type="text" inputmode="decimal" style="padding-left:14px"></div>
+            <div><label class="field-label" for="ocr-norem">No remunerativo ($)</label><input id="ocr-norem" type="text" inputmode="decimal" style="padding-left:14px"></div>
+            <div><label class="field-label" for="ocr-ded">Deducciones ($)</label><input id="ocr-ded" type="text" inputmode="decimal" style="padding-left:14px"></div>
+            <div><label class="field-label" for="ocr-concepto">Concepto</label><input id="ocr-concepto" type="text" style="padding-left:14px"></div>
+          </div>
+          <div style="display:grid;gap:10px;margin-top:16px">
             <button class="submit" style="background:linear-gradient(105deg,#168d77,#126553);box-shadow:0 12px 26px rgba(22,141,119,.24)" onclick="guardarTalCual()">💾 Guardar tal cual</button>
             <button class="submit" onclick="convertirNuevo()">✨ Convertir al formato nuevo (407/2026)</button>
           </div>
+          <p style="color:var(--muted);font-size:11px;margin-top:14px;text-align:center">📸 ¿El recibo se veía borroso? Subí una foto más clara para mejores resultados.</p>
         </div>
       </div>
 
@@ -189,42 +198,46 @@
       AndroidBridge.leerRecibo();
     }
 
-    // Datos leídos por el OCR (llegan desde Android)
+    // Datos leídos por el OCR (llegan desde Android) → abre la VENTANA de revisión
     function reciboLeido(datosJson){
       let datos={};
       try{datos=JSON.parse(datosJson);}catch(e){}
-      const div=document.getElementById('ocr-datos');
-      let html='';
-      html+='📅 Período: <b>'+(datos.periodo||'—')+'</b><br>';
-      html+='👤 CUIL: <b>'+(datos.cuil||'—')+'</b><br>';
-      html+='💰 Remunerativo: <b>$'+(datos.remunerativo!=null?fmtNum(datos.remunerativo):'—')+'</b><br>';
-      html+='📈 No remunerativo: <b>$'+(datos.no_remunerativo!=null?fmtNum(datos.no_remunerativo):'—')+'</b><br>';
-      html+='📉 Deducciones: <b>$'+(datos.deducciones_total!=null?fmtNum(datos.deducciones_total):'—')+'</b><br>';
-      html+='✅ Neto: <b>$'+(datos.neto!=null?fmtNum(datos.neto):'—')+'</b><br>';
-      html+='🍇 Concepto: <b>'+(datos.concepto||'—')+'</b>';
-      div.innerHTML=html;
-      document.getElementById('ocr-resultado').style.display='block';
-      notify('✅ Recibo leído. Elegí qué hacer.');
+      document.getElementById('ocr-periodo').value=datos.periodo||'';
+      document.getElementById('ocr-rem').value=datos.remunerativo!=null?fmtNum(datos.remunerativo):'';
+      document.getElementById('ocr-norem').value=datos.no_remunerativo!=null?fmtNum(datos.no_remunerativo):'';
+      document.getElementById('ocr-ded').value=datos.deducciones_total!=null?fmtNum(datos.deducciones_total):'';
+      document.getElementById('ocr-concepto').value=datos.concepto||'';
+      document.getElementById('ocr-ventana').style.display='block';
+      window.scrollTo(0,0);
+      notify('✅ Recibo leído. Corregí si hace falta y elegí.');
     }
+
+    function cerrarVentana(){document.getElementById('ocr-ventana').style.display='none';}
+
     function fmtNum(n){return n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
     // 💾 Guardar el recibo tal cual
     function guardarTalCual(){
       const cuil=document.getElementById('scuil').value.trim();
-      const periodo=document.getElementById('speriodo').value.trim()||document.getElementById('ocr-periodo').textContent;
+      const periodo=document.getElementById('ocr-periodo').value.trim();
       notify('Guardando recibo…');
       const ok=AndroidBridge.guardarReciboTalCual(cuil,periodo);
       notify(ok?'✅ Recibo guardado tal cual!':'❌ Error al guardar');
-      if(ok){document.getElementById('ocr-resultado').style.display='none';document.getElementById('scuil').value='';document.getElementById('speriodo').value='';}
+      if(ok){cerrarVentana();document.getElementById('scuil').value='';document.getElementById('speriodo').value='';}
     }
 
-    // ✨ Convertir al formato nuevo (407/2026)
+    // ✨ Convertir al formato nuevo (407/2026) con los datos corregidos
     function convertirNuevo(){
       const cuil=document.getElementById('scuil').value.trim();
+      const periodo=document.getElementById('ocr-periodo').value.trim();
+      const rem=document.getElementById('ocr-rem').value.trim();
+      const norem=document.getElementById('ocr-norem').value.trim();
+      const concepto=document.getElementById('ocr-concepto').value.trim();
+      if(!cuil||!periodo||!rem){notify('Faltan datos: CUIL, período y remunerativo');return;}
       notify('Convirtiendo al formato nuevo…');
-      const ok=AndroidBridge.convertirRecibo(cuil);
+      const ok=AndroidBridge.convertirRecibo(cuil,periodo,rem,norem,concepto);
       notify(ok?'✅ Recibo convertido al formato nuevo!':'❌ No se pudo convertir');
-      if(ok){document.getElementById('ocr-resultado').style.display='none';document.getElementById('scuil').value='';document.getElementById('speriodo').value='';}
+      if(ok){cerrarVentana();document.getElementById('scuil').value='';document.getElementById('speriodo').value='';}
     }
 
     function verHistorial(){

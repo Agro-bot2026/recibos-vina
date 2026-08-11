@@ -394,13 +394,28 @@ function extraerDatosRecibo(texto) {
         if (cuiles && cuiles.length) datos.cuil = cuiles[cuiles.length - 1].replace(/\s+/g, '');
     }
 
-    // Remunerativo: buscar valor con formato de dinero (miles con puntos y/o decimales)
-    const mRem = t.match(/(?:REM\.?\s*C\/D|REMUNERATIVO|REM\.?\s*C\/D\.?|SUELDO BRUTO)[:\s]*\$?\s*([\d][\d.,]*)/i);
-    if (mRem) datos.remunerativo = parseNumero(mRem[1]);
+    // Remunerativo: buscar valor con formato de dinero COMPLETO (miles + decimales),
+    // y que NO esté pegado a "C/Hs" (cantidad de hectáreas)
+    const lineasRem = t.split('\n').filter(l => /REM\.?\s*C\/D|REMUNERATIVO|REM\.?\s*C\/D\.?/i.test(l) && !/C\/Hs/i.test(l));
+    for (const linea of lineasRem) {
+        const m = linea.match(/\$?\s*([\d]{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/);
+        if (m && m[1].length >= 4) { datos.remunerativo = parseNumero(m[1]); break; }
+    }
+    if (datos.remunerativo == null) {
+        const mRem = t.match(/(?:REM\.?\s*C\/D|REMUNERATIVO|REM\.?\s*C\/D\.?|SUELDO BRUTO)[:\s]*\$?\s*([\d][\d.,]*)/i);
+        if (mRem && mRem[1].length >= 4) datos.remunerativo = parseNumero(mRem[1]);
+    }
 
     // No remunerativo
-    const mNoRem = t.match(/(?:REM\.?\s*S\/D|NO REMUNERATIVO|REM\.?\s*S\/D\.?)[:\s]*\$?\s*([\d][\d.,]*)/i);
-    if (mNoRem) datos.no_remunerativo = parseNumero(mNoRem[1]);
+    const lineasNoRem = t.split('\n').filter(l => /REM\.?\s*S\/D|NO REMUNERATIVO|REM\.?\s*S\/D\.?/i.test(l) && !/C\/Hs/i.test(l));
+    for (const linea of lineasNoRem) {
+        const m = linea.match(/\$?\s*([\d]{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/);
+        if (m && m[1].length >= 4) { datos.no_remunerativo = parseNumero(m[1]); break; }
+    }
+    if (datos.no_remunerativo == null) {
+        const mNoRem = t.match(/(?:REM\.?\s*S\/D|NO REMUNERATIVO|REM\.?\s*S\/D\.?)[:\s]*\$?\s*([\d][\d.,]*)/i);
+        if (mNoRem && mNoRem[1].length >= 4) datos.no_remunerativo = parseNumero(mNoRem[1]);
+    }
 
     // Deducciones total: buscar "TOTAL DEDUCCIONES" o la fila de totales con formato dinero
     const mDed = t.match(/(?:TOTAL\s*DEDUCCIONES|DEDUCCIONES|DEDUCC\.?)[:\s]*\$?\s*([\d][\d.,]*)/i);
