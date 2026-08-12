@@ -390,88 +390,20 @@ app.post('/api/patron/leer_recibo', requierePatron, (req, res) => {
 
     try {
         fs.writeFileSync(inPath, Buffer.from(archivo_base64, 'base64'));
-        try {
-            const salida = execSync(`"${GEMINI_VENV}" "${GEMINI_SCRIPT}" "${inPath}" "${nombre_archivo || 'recibo.png'}"`,
-                { timeout: 90000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-            const datos = JSON.parse(salida.trim());
-            return res.json({ ok: true, datos, motor: 'gemini' });
-        } catch (e) {
-            console.log('Gemini falló, usando tesseract:', e.message.split('\n')[0]);
-        }
-        try {
-            let imgPath = inPath;
-            if (ext === 'pdf') {
-                try {
-                    const outBase = inPath.replace(/\.[^.]+$/, '');
-                    execSync(`pdftoppm -png -r 200 -f 1 -l 1 "${inPath}" "${outBase}"`, { timeout: 30000 });
-                    const png = `${outBase}-1.png`;
-                    if (fs.existsSync(png)) imgPath = png;
-                } catch (e) {}
-            }
-            const texto = execSync(`tesseract "${imgPath}" stdout -l spa --psm 6 2>/dev/null`, { timeout: 60000, encoding: 'utf-8' });
-            const datos = extraerDatosRecibo(texto);
-            return res.json({ ok: true, texto, datos, motor: 'tesseract' });
-        } catch (e) {
-            return res.status(500).json({ ok: false, error: 'No pude leer el archivo' });
-        }
+        const salida = execSync(`"${GEMINI_VENV}" "${GEMINI_SCRIPT}" "${inPath}" "${nombre_archivo || 'recibo.png'}"`,
+            { timeout: 90000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+        const datos = JSON.parse(salida.trim());
+        res.json({ ok: true, datos, motor: 'gemini' });
     } catch (e) {
-        res.status(500).json({ ok: false, error: 'Error procesando el archivo: ' + e.message });
+        console.log('Gemini falló al leer el recibo:', e.message.split('\n')[0]);
+        res.status(500).json({ ok: false, error: 'No pude leer el archivo. Probá con una foto más clara o cargalo manualmente.' });
     } finally {
         try { fs.unlinkSync(inPath); } catch (e) {}
     }
 });
 
-function extraerDatosRecibo(texto) {
-    const t = texto.replace(/\r/g, '');
-    const datos = {};
-    const mPeriodo = t.match(/(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\s+20\d{2}/i);
-    if (mPeriodo) datos.periodo = mPeriodo[0].toUpperCase();
-    const mCuilContratista = t.match(/Contratista:\s*[^\n]*?\b(20[- ]?\d{8}[- ]?\d)\b/i)
-        || t.match(/Contratista:.*?CUIL:\s*(20[- ]?\d{8}[- ]?\d)/is)
-        || t.match(/(?:Contratista|CONTRATISTA)[\s\S]{0,120}?\b(20[- ]?\d{8}[- ]?\d)\b/i);
-    if (mCuilContratista) {
-        const c = mCuilContratista[1] || mCuilContratista[0];
-        datos.cuil = c.replace(/\s+/g, '');
-    }
-    if (!datos.cuil) {
-        const cuiles = t.match(/\b20[- ]?\d{8}[- ]?\d\b/g);
-        if (cuiles && cuiles.length) datos.cuil = cuiles[cuiles.length - 1].replace(/\s+/g, '');
-    }
-    const lineasRem = t.split('\n').filter(l => /REM\.?\s*C\/D|REMUNERATIVO|REM\.?\s*C\/D\.?/i.test(l) && !/C\/Hs/i.test(l));
-    for (const linea of lineasRem) {
-        const m = linea.match(/\$?\s*([\d]{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/);
-        if (m && m[1].length >= 4) { datos.remunerativo = parseNumero(m[1]); break; }
-    }
-    if (datos.remunerativo == null) {
-        const mRem = t.match(/(?:REM\.?\s*C\/D|REMUNERATIVO|REM\.?\s*C\/D\.?|SUELDO BRUTO)[:\s]*\$?\s*([\d][\d.,]*)/i);
-        if (mRem && mRem[1].length >= 4) datos.remunerativo = parseNumero(mRem[1]);
-    }
-    const lineasNoRem = t.split('\n').filter(l => /REM\.?\s*S\/D|NO REMUNERATIVO|REM\.?\s*S\/D\.?/i.test(l) && !/C\/Hs/i.test(l));
-    for (const linea of lineasNoRem) {
-        const m = linea.match(/\$?\s*([\d]{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/);
-        if (m && m[1].length >= 4) { datos.no_remunerativo = parseNumero(m[1]); break; }
-    }
-    if (datos.no_remunerativo == null) {
-        const mNoRem = t.match(/(?:REM\.?\s*S\/D|NO REMUNERATIVO|REM\.?\s*S\/D\.?)[:\s]*\$?\s*([\d][\d.,]*)/i);
-        if (mNoRem && mNoRem[1].length >= 4) datos.no_remunerativo = parseNumero(mNoRem[1]);
-    }
-    const mDed = t.match(/(?:TOTAL\s*DEDUCCIONES|DEDUCCIONES|DEDUCC\.?)[:\s]*\$?\s*([\d][\d.,]*)/i);
-    if (mDed && mDed[1].includes(',')) datos.deducciones_total = parseNumero(mDed[1]);
-    const mNeto = t.match(/(?:SUELDO\s*NETO|NETO|TOTAL\s*NETO)[:\s]*\$?\s*([\d][\d.,]*)/i);
-    if (mNeto && mNeto[1].includes(',')) datos.neto = parseNumero(mNeto[1]);
-    const mHas = t.match(/(\d+(?:\.\d+)?)\s*HAS?(?:\s+EN\s+PRODUCCI[OÓ]N)?/i);
-    if (mHas && !mHas[1].includes('.')) datos.concepto = `${mHas[1]} HAS EN PRODUCCIÓN`;
-    return datos;
-}
-
-function parseNumero(s) {
-    const limpio = s.replace(/\$/g, '').replace(/\s/g, '');
-    if (limpio.includes(',')) return parseFloat(limpio.replace(/\./g, '').replace(',', '.'));
-    return parseFloat(limpio);
-}
-
 // ─── Health ───
-app.get('/api/health', (req, res) => res.json({ ok: true, app: 'Recibos Viña', version: '0.2.0-auth' }));
+app.get('/api/health', (req, res) => res.json({ ok: true, app: 'Recibos Viña', version: '0.3.0-solo-gemini' }));
 
 const PORT = process.env.PORT || 8400;
 app.listen(PORT, () => console.log(`🦇 Recibos Viña API en :${PORT} (con autenticación)`));
