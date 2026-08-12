@@ -32,8 +32,13 @@ public class ApiClient {
         ctx.getSharedPreferences("recibos", Context.MODE_PRIVATE).edit().clear().apply();
     }
 
-    /** POST con JSON. Si requiereAuth=true, agrega el Bearer token guardado. */
+    /** POST con JSON. Si requiereAuth=true, agrega el Bearer token guardado. Timeout de lectura por defecto: 20s. */
     public static JSONObject post(Context ctx, String endpoint, JSONObject body, boolean requiereAuth) throws Exception {
+        return post(ctx, endpoint, body, requiereAuth, 20000);
+    }
+
+    /** POST con JSON y timeout de lectura configurable (para operaciones lentas como el OCR o la generación de PDF). */
+    public static JSONObject post(Context ctx, String endpoint, JSONObject body, boolean requiereAuth, int readTimeoutMs) throws Exception {
         URL url = new URL(MainActivity.API_URL + endpoint);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
@@ -43,7 +48,7 @@ public class ApiClient {
         }
         conn.setDoOutput(true);
         conn.setConnectTimeout(15000);
-        conn.setReadTimeout(20000);
+        conn.setReadTimeout(readTimeoutMs);
         OutputStream os = conn.getOutputStream();
         os.write(body.toString().getBytes(StandardCharsets.UTF_8));
         os.close();

@@ -391,7 +391,7 @@ app.post('/api/patron/leer_recibo', requierePatron, (req, res) => {
     try {
         fs.writeFileSync(inPath, Buffer.from(archivo_base64, 'base64'));
         const salida = execSync(`"${GEMINI_VENV}" "${GEMINI_SCRIPT}" "${inPath}" "${nombre_archivo || 'recibo.png'}"`,
-            { timeout: 90000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+            { timeout: 120000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
         const datos = JSON.parse(salida.trim());
         res.json({ ok: true, datos, motor: 'gemini' });
     } catch (e) {

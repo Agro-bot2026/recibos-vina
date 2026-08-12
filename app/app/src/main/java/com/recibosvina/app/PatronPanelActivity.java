@@ -200,7 +200,7 @@ public class PatronPanelActivity extends WebViewBase {
                         JSONObject body = new JSONObject();
                         body.put("archivo_base64", ultimoBase64);
                         body.put("nombre_archivo", ultimoNombre);
-                        JSONObject resp = ApiClient.post(PatronPanelActivity.this, "/api/patron/leer_recibo", body, true);
+                        JSONObject resp = ApiClient.post(PatronPanelActivity.this, "/api/patron/leer_recibo", body, true, 150000);
                         if (resp.optBoolean("ok")) {
                             ultimosDatos = resp.optJSONObject("datos");
                             if (ultimosDatos == null) ultimosDatos = new JSONObject();
